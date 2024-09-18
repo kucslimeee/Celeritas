@@ -34,15 +34,6 @@ void measure()
 
 }
 
-void push(int item)
-{
-    for(int i = TxSIZE-1; i > 0; i--){
-        TxData[i] = TxData[i-1];
-    }
-    TxData[0] = item;
-
-}
-
 int analogRead()
 {
 	int rv = 0;

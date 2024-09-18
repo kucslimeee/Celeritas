@@ -8,6 +8,4 @@
 #ifndef INC_EXP_I2C_SLAVE_H_
 #define INC_EXP_I2C_SLAVE_H_
 
-
-
 #endif /* INC_EXP_I2C_SLAVE_H_ */
