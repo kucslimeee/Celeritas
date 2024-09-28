@@ -10,6 +10,10 @@
  #define QUEUE_SIZE 256
  #define ITEM_SIZE 16 // 15 elements + checksum
 
+#define TIMEOUT 0xFD
+#define INTERRUPT 0xFB
+#define CORRUPTED 0xF7
+
  typedef struct {
  	uint8_t data[QUEUE_SIZE][ITEM_SIZE];
  	uint8_t head;
