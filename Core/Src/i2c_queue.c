@@ -6,7 +6,7 @@
   */
 
  #include "i2c_queue.h"
-
+#include "Request.h"
  #define QUEUE_SIZE 256
  #define ITEM_SIZE 16 // 15 elements + checksum
 

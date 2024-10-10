@@ -68,9 +68,9 @@ uint8_t sample_adc(uint8_t samples, uint8_t min_voltage, uint8_t max_voltage){
 		}
 
 	}
-	HAL_GPIO_WritePin(GPIOA, GPIO_Pin_6, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_SET);
 	HAL_GPIO_Delay(10);
-	HAL_GPIO_WritePin(GPIOA, GPIO_Pin_6; GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_RESET);
 	return (uint8_t)(sum/count);
 }
 
