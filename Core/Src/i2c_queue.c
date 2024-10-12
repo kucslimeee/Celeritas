@@ -96,7 +96,7 @@ void add_header(Request request, uint16_t duration){
 
  void add_spectrum(Request request, unsigned int* spectrum, uint8_t resolution){
 	 const uint8_t everyBit = 15*8; //120
-	 uint8_t importantBits = everyBit/resolution;
+	 uint8_t importantBits = everyBit/resolution; // resolution: 4, 6, 8, 10, 12, 15, 20, 30
 	 uint8_t bitArr[everyBit]; //120 byte
 	 uint8_t data[ITEM_SIZE-1];
 	 for(int i = 0; i < resolution; i++){
