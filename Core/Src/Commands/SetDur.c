@@ -4,27 +4,26 @@
  *  Created on: Oct 13, 2024
  *      Author: hadha
  */
-#include "SetDur.h"
-
-
+#include "Commands/SetDur.h"
+#include "Request.h"
 #include "SettingsStore.h"
 
-void setDur(unsigned char id, unsigned char* dec) {
-    setSetting(REPETITIONS, (*(dec+1))>>1);
-    setSetting(MODE_OF_OPERATION, (*(dec+1))%2);
+void setDur(uint8_t id, uint8_t* dec) {
+    setSetting(REPETITIONS, (*dec)>>1);
+    setSetting(MODE_OF_OPERATION, ((*dec)%2) ? MAX_HITS : MAX_TIME);
 
-    int dur = *(dec+2);
+    int dur = *(dec+1);
     for(__uint8_t i = 0; i <= 8; i++) {
         dur *= 2;
     }
-    dur += *(dec+3);
+    dur += *(dec+2);
     setSetting(DURATION, dur);
 
-    int breaktime = *(dec+4);
+    int breaktime = *(dec+3);
     for(__uint8_t j = 0; j <= 8; j++) {
         breaktime *= 2;
     }
-    breaktime += *(dec+5);
-    setSetting(BREAKTIME, dur);
+    breaktime += *(dec+4);
+    setSetting(BREAKTIME, breaktime);
 }
 

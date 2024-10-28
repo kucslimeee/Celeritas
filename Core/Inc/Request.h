@@ -26,6 +26,8 @@ typedef struct {
 	uint32_t start_time;
 	uint16_t min_voltage;
 	uint16_t max_voltage;
+	uint8_t samples;
+	uint8_t resolution;
 } Request;
 
 #endif /* INC_REQUEST_HANDLER_H_ */

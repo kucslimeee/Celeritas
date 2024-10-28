@@ -11,20 +11,30 @@
 //
 
 #include "SettingsStore.h"
+#include "Request.h"
 
 
 typedef struct {
-    enum SettingType;
-    __uint8_t  value;
+    SettingType type;
+    uint16_t  value;
 }Setting;
 
-Setting settings[8] = {0};
+Setting settings[8] = {
+	{MODE_OF_OPERATION, MAX_HITS},
+	{DURATION, 100},
+	{BREAKTIME, 0},
+	{REPETITIONS, 0},
+	{MIN_VOLTAGE, 700},
+	{MAX_VOLTAGE, 4095},
+	{RESOLUTION, 15},
+	{SAMPLES, 5}
+};
 
-__uint8_t getSetting(SettingType setting) {
-    return settings[setting];
+uint16_t getSetting(SettingType setting) {
+    return settings[setting].value;
 }
 
-void setSetting(SettingType setting, __uint8_t value) {
-    settings[setting] = value;
+void setSetting(SettingType setting, uint16_t value) {
+    settings[setting].value = value;
 }
 

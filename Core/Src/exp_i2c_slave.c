@@ -138,11 +138,11 @@ void process_RxData()
 
 		// Step 03: Find which command to execute
 		switch(RxData[0]){
-		case '0xE0':
-			//set_duration(uint8_t * message);
+		case 0xE0:
+			setDur(command_id, command_dec);
 			break;
-		case '0xD0':
-			//set_scale(uint8_t * message);
+		case 0xD0:
+			setScale(command_id, command_dec);
 			break;
 		case 0x07:
 			reMeasure(command_id, command_dec);

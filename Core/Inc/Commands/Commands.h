@@ -10,5 +10,7 @@
 #define COM_COMMANDS_H
 
 #include "Commands/ReMeasure.h"
+#include "Commands/SetDur.h"
+#include "Commands/SetScale.h"
 
 #endif // COM_REMEASURE_H
