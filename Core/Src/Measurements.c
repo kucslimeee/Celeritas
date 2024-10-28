@@ -4,82 +4,73 @@
  *  Created on: Aug 9, 2024
  *      Author: hadha
  */
-#include"main.h"
-#include"exp_i2c_slave.h"
-#include"Request.h"
-#include<i2c_queue.h>
-#include<Checksum.h>
-
-
+#include "Measurements.h"
+#include "main.h"
+#include "exp_i2c_slave.h"
+#include <i2c_queue.h>
 
 #define TxSIZE 16
+#define RESOLUTION 15
+#define SAMPLES 5
 
-//extern uint8_t TxData[TxSIZE];
 extern ADC_HandleTypeDef hadc1;
-//extern TIM_HandleTypeDef htim1;
 
+uint8_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage);
 
-
-void max_hit_measurement(Request request, uint8_t resolution, uint8_t duration, uint8_t samples){
-	uint8_t measurementData[resolution]; //max resolution 15
-	uint8_t internalLength = (request.max_voltage - request.min_voltage)/resolution;
+void max_hit_measurement(Request request){
+	uint8_t measurementData[RESOLUTION] = {0x00};
+	uint8_t intervalLength = (request.max_voltage - request.min_voltage)/RESOLUTION;
 	uint8_t peaks = 0;
-	uint8_t intervalIndex = 0;
-	while(peaks < duration){
-		intervalIndex = (uint8_t)((samples_adc(samples, request.min_voltage, request.max_voltage)
-				-request.min_voltage)/internalLength);
-
+	HAL_ADC_Start(&hadc1);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1);
+	HAL_Delay(100);
+	while(peaks < request.limit){
+		uint8_t sample = sample_adc(SAMPLES, request.min_voltage, request.max_voltage);
+		uint8_t intervalIndex = abs(sample - request.min_voltage)/intervalLength;
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, peaks % 2);
 		measurementData[intervalIndex]++;
 		peaks++;
 	}
 
+
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
 	if(request.is_header){
 		if(request.is_priority){
-			//send data
-			//send header
+			add_spectrum(request, &measurementData, RESOLUTION);
+			add_header(request, request.limit);
 		}
 		else{
-			//send header
-			//send data
+			add_header(request, request.limit);
+			add_spectrum(request, &measurementData, RESOLUTION);
 		}
 	}
 	else{
 		//send data with a given priority
+		add_spectrum(request, &measurementData, RESOLUTION);
 	}
 
 }
 
-uint8_t sample_adc(uint8_t samples, uint8_t min_voltage, uint8_t max_voltage){
-	uint8_t count = 0;
-	uint8_t readVal;
-	uint8_t lastSample;
-	uint8_t SamplesData[samples];
-	int sum = 0;
+uint8_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage){
+	uint32_t sum = 0;
 
-	while(count  < samples){
-		readVal = (uint8_t)(analogRead()*255/4095); //measure ADC
-		if(readVal > min_voltage && readVal < max_voltage){
-			if(readVal > lastSample){
-				SamplesData[count] = readVal;
-				count++;
-			}
-			lastSample = readVal;
-			sum += readVal;
+	while(1){
+		sum = analogRead(); //measure ADC
+		if(!(sum > min_voltage && sum < max_voltage)) continue;
+		for(int i = 1; i < samples; i++){
+			sum += analogRead();
 		}
-
+		break;
 	}
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_SET);
-	HAL_GPIO_Delay(10);
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_RESET);
-	return (uint8_t)(sum/count);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+	HAL_Delay(1);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+	return (uint8_t)(sum/samples);
 }
 
 int analogRead()
 {
-	int rv = 0;
-	HAL_ADC_Start(&hadc1); // start the adc
 	HAL_ADC_PollForConversion(&hadc1, 100); // poll for conversion
-	rv = HAL_ADC_GetValue(&hadc1); // get the adc value
-	return rv;
+	return HAL_ADC_GetValue(&hadc1); // get the adc value
 }
 
