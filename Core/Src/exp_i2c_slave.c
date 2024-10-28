@@ -16,6 +16,7 @@
 
 #include "main.h"
 #include "exp_i2c_slave.h"
+#include <stdbool.h>
 #include "Commands/Commands.h"
 #include "RequestQueue.h"
 #include "Checksum.h"
@@ -57,8 +58,9 @@ extern void HAL_I2C_AddrCallback(I2C_HandleTypeDef *hi2c, uint8_t TransferDirect
 	else
 	{
 		txcount = 0;
-		uint8_t * packet = queue_get();
-		if(!packet) packet = TX_TEMPLATE;
+		bool result = false;
+		uint8_t * packet = queue_get(&result);
+		if(!result) packet = TX_TEMPLATE;
 		else {
 			for(int i = 0; i < TxSIZE; i++) {
 				TxData[i] = packet[i];
@@ -130,8 +132,9 @@ void process_RxData()
 	if(1){
 		// Step 02: Separate the different parts of RxData
 		uint8_t command_id = RxData[1];
-		uint8_t command_dec[5];
-		for (int i = 2; i < 7; i++) command_dec[i-2] = RxData[i];
+		uint8_t command_dec[6];
+		for (int i = 2; i < 9; i++)
+			command_dec[i-2] = RxData[i];
 
 		// Step 03: Find which command to execute
 		switch(RxData[0]){

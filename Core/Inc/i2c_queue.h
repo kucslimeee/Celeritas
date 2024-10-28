@@ -13,8 +13,8 @@
  #include <string.h>
  #include "Checksum.h"
 
- void queue_push(uint8_t item[], bool prioriy, bool checksum);
- uint8_t* queue_get(void);
+ void queue_push(uint8_t* item, bool prioriy, bool checksum);
+ uint8_t* queue_get(bool* result);
  void queue_clear(void);
 
  #endif /* INC_I2C_QUEUE_H_ */

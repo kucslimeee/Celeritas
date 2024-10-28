@@ -24,8 +24,8 @@ typedef struct {
 	bool is_header;
 	uint8_t limit;
 	uint32_t start_time;
-	uint8_t min_voltage;
-	uint8_t max_voltage;
+	uint16_t min_voltage;
+	uint16_t max_voltage;
 } Request;
 
 #endif /* INC_REQUEST_HANDLER_H_ */

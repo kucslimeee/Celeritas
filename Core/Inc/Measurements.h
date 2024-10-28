@@ -7,7 +7,10 @@
 
 #ifndef SRC_MEASUREMENTS_H_
 #define SRC_MEASUREMENTS_H_
+#include"Request.h"
 
 
+
+void max_hit_measurement(Request request);
 
 #endif /* SRC_MEASUREMENTS_H_ */
