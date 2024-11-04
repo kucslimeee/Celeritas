@@ -21,11 +21,13 @@
 #include "RequestQueue.h"
 #include "Checksum.h"
 #include "i2c_queue.h"
+#include "Timer.h"
 
 extern I2C_HandleTypeDef hi2c1;
 extern ADC_HandleTypeDef hadc1;
 
 #define RxSIZE 8
+#define TsyncSIZE 5
 #define TxSIZE 16
 static uint8_t RxData[RxSIZE];
 static uint8_t TxData[TxSIZE] = {0x00};
@@ -37,7 +39,7 @@ uint8_t bytesTransd = 0;
 uint8_t counterror;
 uint8_t startPosition;
 
-
+void process_Command();
 
 int prc = 1;
 
@@ -70,12 +72,16 @@ extern void HAL_I2C_AddrCallback(I2C_HandleTypeDef *hi2c, uint8_t TransferDirect
 	}
 }
 
+bool isTimesyncCommand(){
+ 	return RxData[0] == '6'; // the equalivent of 0x54 in ASCII
+}
+
 void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef *hi2c)
 {
 	rxcount++;
 	if (rxcount < RxSIZE)
 	{
-		if (rxcount == RxSIZE-1)
+		if (rxcount == TsyncSIZE-1 && isTimesyncCommand())
 		{
 			HAL_I2C_Slave_Sequential_Receive_IT(hi2c, RxData+rxcount, 1, I2C_LAST_FRAME);
 		}
@@ -85,9 +91,13 @@ void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef *hi2c)
 		}
 	}
 
-	if (rxcount == RxSIZE)
+	if (rxcount == TsyncSIZE && isTimesyncCommand())
 	{
-		process_RxData();
+		process_TimesyncCommand();
+	}
+	else if (rxcount == RxSIZE)
+	{
+		process_Command();
 	}
 }
 
@@ -112,7 +122,7 @@ void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) //Bus Error / Berror??????
 		{
 			//bytesRrecvd = rxcount-1;  // the first byte is the register address
 			rxcount = 0;  // Reset the rxcount for the next operation
-			process_RxData();
+			process_Command();
 		}
 		else // error while slave is transmitting
 		{
@@ -126,7 +136,13 @@ void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) //Bus Error / Berror??????
 	//BERR error akkor fordul elő ha változik a kommunikáció iránya
 }
 
-void process_RxData()
+void process_TimesyncCommand(void)
+{
+	uint32_t timestamp = (RxData[4]<<24) | (RxData[3]<<16) | (RxData[2]<<8) | RxData[1];
+	Set_SystemTime(timestamp);
+}
+
+void process_Command()
 {
 	// Step 01: Message checksum checking
 	if(1){
