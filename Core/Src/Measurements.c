@@ -24,7 +24,7 @@ void max_hit_measurement(Request request){
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 1);
 	HAL_Delay(100);
 	while(peaks < request.limit){
-		uint8_t sample = sample_adc(request.sampl, request.min_voltage, request.max_voltage);
+		uint8_t sample = sample_adc(request.samples, request.min_voltage, request.max_voltage);
 		uint8_t intervalIndex = abs(sample - request.min_voltage)/intervalLength;
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, peaks % 2);
 		measurementData[intervalIndex]++;
