@@ -12,6 +12,7 @@
 #include "Scheduler.h"
 
 extern ADC_HandleTypeDef hadc1;
+extern volatile RunningState status;
 
 uint8_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage);
 
@@ -27,6 +28,7 @@ void max_hit_measurement(Request request){
 	HAL_Delay(100);
 	while(peaks < request.limit){
 		uint8_t sample = sample_adc(request.samples, request.min_voltage, request.max_voltage);
+		if(!sample) break;
 		uint8_t intervalIndex = abs(sample - request.min_voltage)/intervalLength;
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, peaks % 2);
 		measurementData[intervalIndex]++;
@@ -36,21 +38,22 @@ void max_hit_measurement(Request request){
 
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 0);
+	if(status != INTERRUPTED) {
+		if(request.is_header){
+			if(request.is_priority){
+				add_spectrum(request, &measurementData, resolution);
+				add_header(request, request.limit);
+			} else {
+				add_header(request, request.limit);
+				add_spectrum(request, &measurementData, resolution);
+			}
+		}else {
+			add_spectrum(request, &measurementData, resolution);
+		}
+	}else {
+		add_error(request, INTERRUPT);
+	}
 	scheduler_finish_measurement();
-	if(request.is_header){
-		if(request.is_priority){
-			add_spectrum(request, &measurementData, resolution);
-			add_header(request, request.limit);
-		}
-		else{
-			add_header(request, request.limit);
-			add_spectrum(request, &measurementData, resolution);
-		}
-	}
-	else{
-		//send data with a given priority
-		add_spectrum(request, &measurementData, resolution);
-	}
 
 }
 
@@ -58,6 +61,9 @@ uint8_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage){
 	uint32_t sum = 0;
 
 	while(1){
+		if(status != RUNNING) {
+			return 0;
+		}
 		sum = analogRead(); //measure ADC
 		if(!(sum > min_voltage && sum < max_voltage)) continue;
 		for(int i = 1; i < samples; i++){

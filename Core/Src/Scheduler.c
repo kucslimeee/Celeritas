@@ -45,12 +45,13 @@ void scheduler_on_even_second() {
 }
 
 void scheduler_on_i2c_communication() {
-	if(status == RUNNING) status == INTERRUPTED;
+	if(status == RUNNING) status = INTERRUPTED;
 }
 
 void scheduler_update() {
 	if(status != STARTING) return;
 	if(Get_SystemTime() != current_request.start_time) return;
+	status = RUNNING;
 	max_hit_measurement(current_request);
 }
 

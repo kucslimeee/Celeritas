@@ -51,6 +51,7 @@ extern void HAL_I2C_ListenCpltCallback (I2C_HandleTypeDef *hi2c)
 
 extern void HAL_I2C_AddrCallback(I2C_HandleTypeDef *hi2c, uint8_t TransferDirection, uint16_t AddrMatchCode)
 {
+	scheduler_on_i2c_communication();
 
 	if(TransferDirection == I2C_DIRECTION_TRANSMIT)  // if the master wants to transmit the data
 	{
@@ -71,7 +72,6 @@ extern void HAL_I2C_AddrCallback(I2C_HandleTypeDef *hi2c, uint8_t TransferDirect
 		}
 		HAL_I2C_Slave_Seq_Transmit_IT(hi2c, TxData+txcount, 1, I2C_FIRST_FRAME);
 	}
-	scheduler_on_i2c_communication();
 }
 
 bool isTimesyncCommand(){
