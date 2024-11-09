@@ -22,6 +22,7 @@
 #include "Checksum.h"
 #include "i2c_queue.h"
 #include "Timer.h"
+#include "Scheduler.h"
 
 extern I2C_HandleTypeDef hi2c1;
 extern ADC_HandleTypeDef hadc1;
@@ -70,6 +71,7 @@ extern void HAL_I2C_AddrCallback(I2C_HandleTypeDef *hi2c, uint8_t TransferDirect
 		}
 		HAL_I2C_Slave_Seq_Transmit_IT(hi2c, TxData+txcount, 1, I2C_FIRST_FRAME);
 	}
+	scheduler_on_i2c_communication();
 }
 
 bool isTimesyncCommand(){

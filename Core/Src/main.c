@@ -24,6 +24,7 @@
 #include "RequestQueue.h"
 #include "i2c_queue.h"
 #include "Measurements.h"
+#include "Scheduler.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -112,10 +113,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	Request request = request_queue_get();
-	if(request.start_time) {
-		max_hit_measurement(request);
-	}
+	  scheduler_update();
   }
   /* USER CODE END 3 */
 }

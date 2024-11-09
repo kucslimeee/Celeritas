@@ -10,9 +10,7 @@
  #define QUEUE_SIZE 256
  #define ITEM_SIZE 16 // 15 elements + checksum
 
-#define TIMEOUT 0xFD
-#define INTERRUPT 0xFB
-#define CORRUPTED 0xF7
+
 
  typedef struct {
  	uint8_t data[QUEUE_SIZE][ITEM_SIZE];
@@ -143,5 +141,5 @@ void add_header(Request request, uint16_t duration){
 	 if(error_type == CORRUPTED){
 	 	errorData[14] = 0xF7;
 	 }
-	 //queue_push(errorData, priority???, checksum???);
+	 queue_push(errorData, request.is_priority, true);
  }

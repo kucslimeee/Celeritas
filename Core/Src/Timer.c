@@ -5,6 +5,7 @@
  *     Author: adamg
  */
 #include "Timer.h"
+#include "Scheduler.h"
 
 volatile uint32_t current_unix_time = 0;
 volatile uint16_t counter = 0;
@@ -18,6 +19,7 @@ void Systick_Interrupt(){
 		current_unix_time++;
 		counter = 0;
 	}
+	scheduler_on_even_second();
 }
 
 

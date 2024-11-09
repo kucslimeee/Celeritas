@@ -4,10 +4,12 @@
  *  Created on: Aug 9, 2024
  *      Author: hadha
  */
+
 #include "Measurements.h"
 #include "main.h"
 #include "exp_i2c_slave.h"
-#include <i2c_queue.h>
+#include "i2c_queue.h"
+#include "Scheduler.h"
 
 extern ADC_HandleTypeDef hadc1;
 
@@ -34,6 +36,7 @@ void max_hit_measurement(Request request){
 
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 0);
+	scheduler_finish_measurement();
 	if(request.is_header){
 		if(request.is_priority){
 			add_spectrum(request, &measurementData, resolution);
