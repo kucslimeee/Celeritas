@@ -147,7 +147,7 @@ void process_TimesyncCommand(void)
 void process_Command()
 {
 	// Step 01: Message checksum checking
-	if(1){
+	if(calculate_checksum(RxData, 7) == RxData[7]){
 		// Step 02: Separate the different parts of RxData
 		uint8_t command_id = RxData[1];
 		uint8_t command_dec[6];
