@@ -10,17 +10,19 @@ wE0010500640078C2
 
 Command Type: set dur (0xE0)
 Command ID: 1 (0x01)
-Number of repetitions: 2 (0x02), mode of operation bit: 1 (0x01) = 0x05 (number of repetition << 1 | mode of operation bit)
+Number of repetitions: 2 (0x02), mode of operation bit: 1 (0x01), is okaying bit: 0 (0x00) = 0x12 
+(number of repetition << 2 | mode of operation bit << 1 | is okaying bit)
 Duration: 100 (0x0064) - there is 2 bytes of space
 time between two measurements: 120 sec (0x0078) - also 2 byte
 Checksum: C2
 
 Set dur (max time measurement):
-wE0010500640078C2
+wE0010400640078C2
 
 Command Type: set dur (0xE0)
 Command ID: 1 (0x01)
-Number of repetitions: 2 (0x02), mode of operation bit: 0 (0x00) = 0x04 (number of repetition << 1 | mode of operation bit)
+Number of repetitions: 2 (0x02), mode of operation bit: 0 (0x01), is okaying bit: 1 (0x01) = 0x11 
+(number of repetition << 2 | mode of operation bit << 1 | is okaying bit)
 Duration: 100 (0x0064) - there is 2 bytes of space
 time between two measurements: 120 sec (0x0078) - also 2 byte
 Checksum: C2

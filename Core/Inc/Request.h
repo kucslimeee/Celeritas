@@ -19,8 +19,9 @@ typedef enum class {
 
 typedef struct {
 	uint8_t ID;				// (new) measurement ID
-	RequestType type;		//
-	bool is_priority;		//
+	RequestType type;
+	bool is_okay;
+	bool is_priority;
 	bool is_header;
 	uint8_t limit;
 	uint32_t start_time;

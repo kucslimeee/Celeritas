@@ -10,11 +10,12 @@
 #include "exp_i2c_slave.h"
 #include "i2c_queue.h"
 #include "Scheduler.h"
+#include <stdbool.h>
 
 extern ADC_HandleTypeDef hadc1;
 extern volatile RunningState status;
 
-uint8_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage);
+uint8_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage, bool is_okay);
 
 void max_hit_measurement(Request request){
 	uint8_t resolution = request.resolution;
@@ -27,7 +28,7 @@ void max_hit_measurement(Request request){
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 1);
 	HAL_Delay(100);
 	while(peaks < request.limit){
-		uint8_t sample = sample_adc(request.samples, request.min_voltage, request.max_voltage);
+		uint8_t sample = sample_adc(request.samples, request.min_voltage, request.max_voltage, request.is_okay);
 		if(!sample) break;
 		uint8_t intervalIndex = abs(sample - request.min_voltage)/intervalLength;
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, peaks % 2);
@@ -57,7 +58,7 @@ void max_hit_measurement(Request request){
 
 }
 
-uint8_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage){
+uint8_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage, bool is_okay){
 	uint32_t sum = 0;
 
 	while(1){
@@ -71,9 +72,11 @@ uint8_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage){
 		}
 		break;
 	}
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
-	HAL_Delay(1);
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+	if(is_okay) {
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+		HAL_Delay(1);
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+	}
 	return (uint8_t)(sum/samples);
 }
 

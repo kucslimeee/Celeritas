@@ -21,6 +21,7 @@ typedef struct {
 
 Setting settings[8] = {
 	{MODE_OF_OPERATION, MAX_HITS},
+	{IS_OKAY, 0},
 	{DURATION, 100},
 	{BREAKTIME, 0},
 	{REPETITIONS, 0},

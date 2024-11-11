@@ -63,6 +63,7 @@ void scheduler_add_request(uint8_t id, uint32_t start_time, uint8_t config) {
 	Request new_request;
 	new_request.ID = id;
     new_request.type = getSetting(MODE_OF_OPERATION);
+    new_request.is_okay = getSetting(IS_OKAY);
     new_request.is_priority = config & 0x80; // the first bit of byte 5
     new_request.is_header = config & 0x40; // the second bit of byte 5
 	new_request.limit = getSetting(DURATION);
