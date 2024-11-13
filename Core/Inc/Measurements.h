@@ -11,6 +11,6 @@
 
 
 
-void max_hit_measurement(Request request);
+void measure(Request request);
 
 #endif /* SRC_MEASUREMENTS_H_ */

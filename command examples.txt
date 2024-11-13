@@ -17,7 +17,7 @@ time between two measurements: 120 sec (0x0078) - also 2 byte
 Checksum: C2
 
 Set dur (max time measurement):
-wE0010400640078C2
+wE0011100640078CE
 
 Command Type: set dur (0xE0)
 Command ID: 1 (0x01)
@@ -25,17 +25,17 @@ Number of repetitions: 2 (0x02), mode of operation bit: 0 (0x01), is okaying bit
 (number of repetition << 2 | mode of operation bit << 1 | is okaying bit)
 Duration: 100 (0x0064) - there is 2 bytes of space
 time between two measurements: 120 sec (0x0078) - also 2 byte
-Checksum: C2
+Checksum: CE
 
 Set scale:
-wD0023E8FFF0F05B2
+wD0023E8FFF1005B3
 
 Command Type: set scale (0xD0)
 Command ID: 2 (0x02)
 Min voltage: 1000 (0x3E8), max voltage 4095 (0xFFF) = 0x3E8fff (min voltage << 12 | max_voltage)
-Resolution: 15 (0x0F)
+Resolution: 16 (0x10)
 Sampling: 5 (0x05)
-Checksum: B2
+Checksum: B3
 
 Request a measurement:
 w0703B0e728670030

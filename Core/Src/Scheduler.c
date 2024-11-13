@@ -52,7 +52,7 @@ void scheduler_update() {
 	if(status != STARTING) return;
 	if(Get_SystemTime() != current_request.start_time) return;
 	status = RUNNING;
-	max_hit_measurement(current_request);
+	measure(current_request);
 }
 
 void scheduler_finish_measurement() {
