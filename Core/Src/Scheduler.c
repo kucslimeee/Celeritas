@@ -12,11 +12,15 @@
 #include "Timer.h"
 #include "Measurements.h"
 #include "SettingsStore.h"
+#include "Selftest.h"
+
+#define INTERRUPT_TIME 10 //s
 
 // PRIVATE GLOBALS
 volatile Request current_request;
 volatile Request next_request;
 uint16_t duration;
+uint16_t interrupt_timer;
 volatile RunningState status = IDLE;
 
 // METHOD IMPLEMENTATIONS
@@ -26,6 +30,12 @@ void scheduler_on_even_second() {
 		duration--;
 		if (duration == 0) status = FINISHED;
 	}
+
+	if(status == INTERRUPTED) {
+		interrupt_timer--;
+		if (interrupt_timer == 0) status = IDLE;
+	}
+
 	if(status != IDLE) return;
 	if(next_request.start_time > 0) {
 		current_request = next_request;
@@ -45,21 +55,24 @@ void scheduler_on_even_second() {
 }
 
 void scheduler_on_i2c_communication() {
-	if(status == RUNNING) status = INTERRUPTED;
+	if(status != RUNNING) return;
+	status = INTERRUPTED;
+	interrupt_timer = INTERRUPT_TIME;
 }
 
 void scheduler_update() {
 	if(status != STARTING) return;
 	if(Get_SystemTime() != current_request.start_time) return;
 	status = RUNNING;
-	measure(current_request);
+	if (current_request.type == SELFTEST) selftest(current_request);
+	else measure(current_request);
 }
 
 void scheduler_finish_measurement() {
 	status = IDLE;
 }
 
-void scheduler_add_request(uint8_t id, uint32_t start_time, uint8_t config) {
+void scheduler_request_measurement(uint8_t id, uint32_t start_time, uint8_t config) {
 	Request new_request;
 	new_request.ID = id;
     new_request.type = getSetting(MODE_OF_OPERATION);
@@ -86,6 +99,22 @@ void scheduler_add_request(uint8_t id, uint32_t start_time, uint8_t config) {
 			current_start += (uint16_t)breaktime;
 		}
 	}
+}
+
+void scheduler_request_selftest(uint8_t id, uint32_t start_time, uint8_t priority) {
+	Request new_request;
+	new_request.ID =  id;
+	new_request.type = SELFTEST;
+	new_request.is_priority = priority & 0x80;
+	new_request.start_time = start_time;
+	request_queue_put(new_request);
+}
+
+/*
+ * 0 = current_request, 1 = next_request
+ */
+uint8_t scheduler_get_request_id(uint8_t idx) {
+	return (idx) ? next_request.ID : current_request.ID;
 }
 
 

@@ -39,8 +39,16 @@ Checksum: B3
 
 Request a measurement:
 w0703B0e728670030
-Command Type: reMe (0x07)
+Command Type: reMeasure (0x07)
 Command ID: 3 (0x03)
 Start time: 1730734000 (0x6728e7B0) - epoch time in 4 bytes. You have to flip the order of bits as well so the result is: 0xB0e72867.
 Is priority: 0 (0x00), Is header: 0 (0x00) = 0x00 (is priority << 7 | is header << 6)
 Checksum: 30
+
+Request a selftest:
+w06044CE7286701CD
+Command Type: reSelftest (0x06)
+Command ID: 4 (0x04)
+Start time: 1730733900 (0x6728e74c) - epoch time in 4 bytes. You have to flip the order of bits as well so the result is: 0xB0e72867.
+Is priority: 10 (0x01)
+Checksum: CD

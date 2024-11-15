@@ -23,7 +23,9 @@ void scheduler_on_even_second();
 void scheduler_on_i2c_communication();
 void scheduler_update();
 void scheduler_finish_measurement();
-void scheduler_add_request(uint8_t id, uint32_t start_time, uint8_t config);
+void scheduler_request_measurement(uint8_t id, uint32_t start_time, uint8_t config);
+void scheduler_request_selftest(uint8_t id, uint32_t start_time, uint8_t priority);
+uint8_t scheduler_get_request_id(uint8_t idx);
 void scheduler_delete_request(uint8_t id);
 void scheduler_delete_all_requests();
 

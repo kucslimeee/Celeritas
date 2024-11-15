@@ -165,8 +165,8 @@ void process_Command()
 		case 0x07:
 			reMeasure(command_id, command_dec);
 			break;
-		case '0x06':
-			//RequestSelfTest(uint8_t * message);
+		case 0x06:
+			reSelftest(command_id, command_dec);
 			break;
 		case '0x0F':
 			//ABReset();
