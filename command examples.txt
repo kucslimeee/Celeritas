@@ -6,33 +6,33 @@ Time in little endian encoding.
 The last three bytes (six zeros) are fillers for regular writes.
 
 Set dur (max hit measurement):
-wE0010500640078C2
+wE0010A00640078C7
 
 Command Type: set dur (0xE0)
 Command ID: 1 (0x01)
-Number of repetitions: 2 (0x02), mode of operation bit: 1 (0x01), is okaying bit: 0 (0x00) = 0x12 
-(number of repetition << 2 | mode of operation bit << 1 | is okaying bit)
+Number of repetitions: 2 (0x02), mode of operation bit: 1 (0x01), is okaying bit: 0 (0x00) = 0x0A 
+(number of repetition << 2 | (mode of operation bit << 1) | is okaying bit)
 Duration: 100 (0x0064) - there is 2 bytes of space
 time between two measurements: 120 sec (0x0078) - also 2 byte
-Checksum: C2
+Checksum: C7
 
 Set dur (max time measurement):
-wE0011100640078CE
+wE000B1006400786D
 
 Command Type: set dur (0xE0)
 Command ID: 1 (0x01)
-Number of repetitions: 2 (0x02), mode of operation bit: 0 (0x01), is okaying bit: 1 (0x01) = 0x11 
-(number of repetition << 2 | mode of operation bit << 1 | is okaying bit)
+Number of repetitions: 2 (0x02), mode of operation bit: 0 (0x01), is okaying bit: 1 (0x01) = 0x0B
+(number of repetition << 2 | (mode of operation bit << 1) | is okaying bit)
 Duration: 100 (0x0064) - there is 2 bytes of space
 time between two measurements: 120 sec (0x0078) - also 2 byte
-Checksum: CE
+Checksum: 6D
 
 Set scale:
 wD0023E8FFF1005B3
 
 Command Type: set scale (0xD0)
 Command ID: 2 (0x02)
-Min voltage: 1000 (0x3E8), max voltage 4095 (0xFFF) = 0x3E8fff (min voltage << 12 | max_voltage)
+Min voltage: 1000 (0x3E8), max voltage 4095 (0xFFF) = 0x3E8FFF (min voltage << 12 | max_voltage)
 Resolution: 16 (0x10)
 Sampling: 5 (0x05)
 Checksum: B3
