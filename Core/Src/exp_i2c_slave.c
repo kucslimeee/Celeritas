@@ -142,6 +142,7 @@ void process_TimesyncCommand(void)
 {
 	uint32_t timestamp = (RxData[4]<<24) | (RxData[3]<<16) | (RxData[2]<<8) | RxData[1];
 	Set_SystemTime(timestamp);
+	scheduler_on_command();
 }
 
 void process_Command()
@@ -189,6 +190,7 @@ void process_Command()
 		default:
 			break;
 		}
+		scheduler_on_command();
 	}
 	else{
 		//invalid command error

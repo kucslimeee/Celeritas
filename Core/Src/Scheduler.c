@@ -10,6 +10,7 @@
 #include "RequestQueue.h"
 #include "i2c_queue.h"
 #include "Timer.h"
+#include "main.h"
 #include "Measurements.h"
 #include "SettingsStore.h"
 #include "Selftest.h"
@@ -24,6 +25,27 @@ uint16_t interrupt_timer;
 volatile RunningState status = IDLE;
 
 // METHOD IMPLEMENTATIONS
+
+void scheduler_enter_sleep() {
+	HAL_SuspendTick();
+	HAL_PWR_EnableSleepOnExit ();
+	HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
+}
+
+void scheduler_wakeup() {
+	HAL_ResumeTick();
+	HAL_PWR_DisableSleepOnExit ();
+}
+
+void scheduler_on_command() {
+	scheduler_on_even_second();
+	if (Get_SystemTime()+120 >= current_request.start_time) {
+		scheduler_wakeup();
+	} else {
+		scheduler_enter_sleep();
+	}
+}
+
 
 void scheduler_on_even_second() {
 	if(current_request.type == MAX_TIME) {
@@ -70,6 +92,7 @@ void scheduler_update() {
 
 void scheduler_finish_measurement() {
 	status = IDLE;
+	scheduler_enter_sleep();
 }
 
 void scheduler_request_measurement(uint8_t id, uint32_t start_time, uint8_t config) {
