@@ -5,6 +5,13 @@ Command Type: Timesync (coming from OBC) - 0x36
 Time in little endian encoding.
 The last three bytes (six zeros) are fillers for regular writes.
 
+Timer set (2):
+w364CE72867000000
+
+Command Type: Timesync (coming from OBC) - 0x36
+Time in little endian encoding.
+The last three bytes (six zeros) are fillers for regular writes.
+
 Set dur (max hit measurement):
 wE0010A00640078C7
 

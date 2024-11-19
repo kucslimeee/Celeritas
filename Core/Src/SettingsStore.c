@@ -19,7 +19,7 @@ typedef struct {
     uint16_t  value;
 }Setting;
 
-Setting settings[8] = {
+Setting settings[9] = {
 	{MODE_OF_OPERATION, MAX_HITS},
 	{IS_OKAY, 0},
 	{DURATION, 100},
