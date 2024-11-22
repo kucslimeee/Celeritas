@@ -24,7 +24,7 @@ time between two measurements: 120 sec (0x0078) - also 2 byte
 Checksum: C7
 
 Set dur (max time measurement):
-wE000B1006400786D
+wE0010B006400786E
 
 Command Type: set dur (0xE0)
 Command ID: 1 (0x01)
@@ -32,7 +32,7 @@ Number of repetitions: 2 (0x02), mode of operation bit: 0 (0x01), is okaying bit
 (number of repetition << 2 | (mode of operation bit << 1) | is okaying bit)
 Duration: 100 (0x0064) - there is 2 bytes of space
 time between two measurements: 120 sec (0x0078) - also 2 byte
-Checksum: 6D
+Checksum: 6E
 
 Set scale:
 wD0023E8FFF1005B3
@@ -49,7 +49,7 @@ w0703B0e728670030
 Command Type: reMeasure (0x07)
 Command ID: 3 (0x03)
 Start time: 1730734000 (0x6728e7B0) - epoch time in 4 bytes. You have to flip the order of bits as well so the result is: 0xB0e72867.
-Is priority: 0 (0x00), Is header: 0 (0x00) = 0x00 (is priority << 7 | is header << 6)
+Is priority: 0 (0x00), Is header: 0 (0x00) = 0x00 (is priority << 7 | (is header << 6))
 Checksum: 30
 
 Request a selftest:
@@ -57,5 +57,5 @@ w06044CE7286701CD
 Command Type: reSelftest (0x06)
 Command ID: 4 (0x04)
 Start time: 1730733900 (0x6728e74c) - epoch time in 4 bytes. You have to flip the order of bits as well so the result is: 0xB0e72867.
-Is priority: 10 (0x01)
+Is priority: 01 (0x01)
 Checksum: CD
