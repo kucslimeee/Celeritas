@@ -18,8 +18,8 @@ void Systick_Interrupt(){
 	if (counter == 1000) {
 		current_unix_time++;
 		counter = 0;
+		scheduler_on_even_second();
 	}
-	scheduler_on_even_second();
 }
 
 

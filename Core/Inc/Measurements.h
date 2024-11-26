@@ -12,7 +12,7 @@
 
 
 void measure(Request request);
-uint8_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage, bool is_okay);
+uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage, bool is_okay);
 void select_measure_adc();
 
 

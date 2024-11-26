@@ -43,7 +43,7 @@ void measure(Request request){
 
 	HAL_Delay(100);
 	while(peaks < request.limit){
-		uint8_t sample = sample_adc(request.samples, request.min_voltage, request.max_voltage, request.is_okay);
+		uint16_t sample = sample_adc(request.samples, request.min_voltage, request.max_voltage, request.is_okay);
 		if(!sample) break;
 		uint8_t intervalIndex = abs(sample - request.min_voltage)/intervalLength;
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, peaks % 2);
@@ -76,7 +76,7 @@ void measure(Request request){
 /*
  * BEFORE YOU CALL make SURE ADC1 is INITIALIZED AND the selected channel is ADC_IN_0 !!!!
  */
-uint8_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage, bool is_okay){
+uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage, bool is_okay){
 	uint32_t sum = 0;
 
 	while(1){
@@ -95,7 +95,7 @@ uint8_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage, 
 		HAL_Delay(1);
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
 	}
-	return (uint8_t)(sum/samples);
+	return (uint16_t)(sum/samples);
 }
 
 int analogRead()

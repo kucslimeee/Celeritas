@@ -48,7 +48,7 @@ void scheduler_on_command() {
 
 
 void scheduler_on_even_second() {
-	if(current_request.type == MAX_TIME) {
+	if(current_request.type == MAX_TIME && status == RUNNING) {
 		duration--;
 		if (duration == 0) status = FINISHED;
 	}
@@ -87,7 +87,10 @@ void scheduler_update() {
 	if(Get_SystemTime() != current_request.start_time) return;
 	status = RUNNING;
 	if (current_request.type == SELFTEST) selftest(current_request);
-	else measure(current_request);
+	else {
+		if(current_request.type == MAX_TIME) duration = current_request.limit;
+		measure(current_request);
+	}
 }
 
 void scheduler_finish_measurement() {
