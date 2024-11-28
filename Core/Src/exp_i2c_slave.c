@@ -75,7 +75,7 @@ extern void HAL_I2C_AddrCallback(I2C_HandleTypeDef *hi2c, uint8_t TransferDirect
 }
 
 bool isTimesyncCommand(){
- 	return RxData[0] == '6'; // the equalivent of 0x54 in ASCII
+ 	return RxData[0] == 0x54;
 }
 
 void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef *hi2c)

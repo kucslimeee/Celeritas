@@ -29,25 +29,19 @@ volatile RunningState status = IDLE;
 
 void scheduler_enter_sleep() {
 	HAL_SuspendTick();
-	HAL_PWR_EnableSleepOnExit ();
+	//HAL_PWR_EnableSleepOnExit ();
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, 1);
 	HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
 }
 
 void scheduler_wakeup() {
 	HAL_ResumeTick();
-	HAL_PWR_DisableSleepOnExit ();
+	//HAL_PWR_DisableSleepOnExit ();
 }
 
 void scheduler_on_command() {
 	scheduler_on_even_second();
 	command_complete = true;
-
-	if (Get_SystemTime()+120 >= current_request.start_time) {
-		scheduler_wakeup();
-	} else {
-		scheduler_enter_sleep();
-	}
 }
 
 
@@ -81,6 +75,7 @@ void scheduler_on_even_second() {
 }
 
 void scheduler_on_i2c_communication() {
+	scheduler_wakeup();
 	if(status != RUNNING) return;
 	status = INTERRUPTED;
 	interrupt_timer = INTERRUPT_TIME;
@@ -96,6 +91,12 @@ void scheduler_update() {
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1);
 		HAL_Delay(200);
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
+
+		if (Get_SystemTime()+120 >= current_request.start_time) {
+			scheduler_wakeup();
+		} else {
+			scheduler_enter_sleep();
+		}
 	}
 
 	if(status != STARTING) return;
