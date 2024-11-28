@@ -22,6 +22,7 @@ volatile Request current_request;
 volatile Request next_request;
 uint16_t duration;
 uint16_t interrupt_timer;
+bool command_complete = false;
 volatile RunningState status = IDLE;
 
 // METHOD IMPLEMENTATIONS
@@ -29,6 +30,7 @@ volatile RunningState status = IDLE;
 void scheduler_enter_sleep() {
 	HAL_SuspendTick();
 	HAL_PWR_EnableSleepOnExit ();
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, 1);
 	HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
 }
 
@@ -39,6 +41,8 @@ void scheduler_wakeup() {
 
 void scheduler_on_command() {
 	scheduler_on_even_second();
+	command_complete = true;
+
 	if (Get_SystemTime()+120 >= current_request.start_time) {
 		scheduler_wakeup();
 	} else {
@@ -83,6 +87,17 @@ void scheduler_on_i2c_communication() {
 }
 
 void scheduler_update() {
+	if(command_complete) {
+		command_complete = false;
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1);
+		HAL_Delay(200);
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
+		HAL_Delay(200);
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1);
+		HAL_Delay(200);
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
+	}
+
 	if(status != STARTING) return;
 	if(Get_SystemTime() != current_request.start_time) return;
 	status = RUNNING;
