@@ -69,7 +69,7 @@ void measure(Request request){
  * BEFORE YOU CALL make SURE ADC1 is INITIALIZED AND the selected channel is ADC_IN_0 !!!!
  */
 uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage, bool is_okay){
-	uint32_t sum = 0;
+	uint16_t sum = 0;
 
 	while(1){
 		if(status != RUNNING) {
@@ -84,7 +84,10 @@ uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage,
 	}
 	if(is_okay) {
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
-		HAL_Delay(1);
+		uint16_t voltage;
+		do {
+			voltage = analogRead();
+		}while (voltage > min_voltage);
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
 	}
 	return (uint16_t)(sum/samples);

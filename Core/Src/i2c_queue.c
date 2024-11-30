@@ -123,7 +123,7 @@ void add_header(Request request, uint16_t duration){
 
 
  void add_spectrum(Request request, uint8_t* spectrum, uint8_t resolution){
-	 const uint8_t everyBit = 15*8; //120, we can modify to 128 and it should work
+	 const uint8_t everyBit = 16*8; //120, we can modify to 128 and it should work
 	 uint8_t importantBits = everyBit/resolution; // how many bits do we keep in
 
 	 uint8_t bitArr[everyBit]; //120 byte
