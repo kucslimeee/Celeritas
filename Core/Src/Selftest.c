@@ -8,6 +8,7 @@
 #include "i2c_queue.h"
 #include "Timer.h"
 #include "Measurements.h"
+#include "Channels.h"
 #include "main.h"
 #include <stdint.h>
 #include <stdbool.h>
@@ -15,7 +16,6 @@
 extern ADC_HandleTypeDef hadc1;
 
 uint16_t get_temperature();
-void select_temp_adc();
 
 void selftest(Request request) {
 	bool error_filter (uint8_t* item) {
@@ -41,9 +41,9 @@ void selftest(Request request) {
 	uint8_t request_1 = scheduler_get_request_id(0);
 	uint8_t request_2 = scheduler_get_request_id(1);
 
-	select_measure_adc();
+	select_measurement_channel();
 	HAL_ADC_Start(&hadc1);
-	uint16_t test_measurement = sample_adc(10, 1000, 4095, false);
+	uint16_t test_measurement = analogRead();
 	HAL_ADC_Stop(&hadc1);
 
 	uint8_t packet_data[15] = {
@@ -67,18 +67,10 @@ void selftest(Request request) {
 	scheduler_finish_measurement();
 }
 
-void select_temp_adc() {
-	 ADC_ChannelConfTypeDef sConfig = {0};
-	 sConfig.Channel = ADC_CHANNEL_TEMPSENSOR;
-	 sConfig.Rank = ADC_REGULAR_RANK_1;
-	 if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-	    Error_Handler();
-}
-
 uint16_t get_temperature() {
-	select_temp_adc();
+	select_temperature_channel();
 	HAL_ADC_Start(&hadc1);
-	HAL_ADC_PollForConversion(&hadc1, 10);
+	HAL_ADC_PollForConversion(&hadc1, 100);
 	uint16_t adc = HAL_ADC_GetValue(&hadc1);
 	HAL_ADC_Stop(&hadc1);
 	return adc;

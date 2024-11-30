@@ -6,26 +6,18 @@
  */
 
 #include "Measurements.h"
+#include "Channels.h"
 #include "main.h"
 #include "exp_i2c_slave.h"
 #include "i2c_queue.h"
 #include "Scheduler.h"
 #include <stdbool.h>
+#include <stdlib.h>
 
 extern ADC_HandleTypeDef hadc1;
 extern volatile RunningState status;
 
-void select_measure_adc() {
-	ADC_ChannelConfTypeDef sConfig = {0};
-	sConfig.Channel = ADC_CHANNEL_1;
-	sConfig.Rank = ADC_REGULAR_RANK_1;
-	sConfig.SingleDiff = ADC_SINGLE_ENDED;
-	sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
-	sConfig.OffsetNumber = ADC_OFFSET_NONE;
-	sConfig.Offset = 0;
-	if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-	    Error_Handler();
-}
+uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage, bool is_okay);
 
 
 void measure(Request request){
@@ -36,7 +28,7 @@ void measure(Request request){
 	uint8_t intervalSize = 4080 / resolution; // the maximum number of peaks that a category can store. 4080 = 255 * 16
 	uint8_t peaks = 0;
 
-	select_measure_adc();
+	select_measurement_channel();
 	HAL_ADC_Start(&hadc1);
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 1);
@@ -98,7 +90,7 @@ uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage,
 	return (uint16_t)(sum/samples);
 }
 
-int analogRead()
+uint16_t analogRead()
 {
 	HAL_ADC_PollForConversion(&hadc1, 100); // poll for conversion
 	return HAL_ADC_GetValue(&hadc1); // get the adc value
