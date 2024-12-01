@@ -46,6 +46,8 @@ extern "C" {
 
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
+/* Base address of the Flash sectors */
+
 
 /* USER CODE END EM */
 
