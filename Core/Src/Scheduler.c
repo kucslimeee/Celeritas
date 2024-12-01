@@ -98,6 +98,10 @@ void scheduler_update() {
 			scheduler_enter_sleep();
 		}
 	}
+	if (status != IDLE && status != STARTING && status != RUNNING &&
+		status != INTERRUPTED && status != FINISHED) {
+		status = IDLE;
+	}
 
 	if(status != STARTING) return;
 	if(Get_SystemTime() != current_request.start_time) return;
