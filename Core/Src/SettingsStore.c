@@ -22,13 +22,13 @@ typedef struct {
 Setting settings[9] = {
 	{MODE_OF_OPERATION, MAX_HITS},
 	{IS_OKAY, 0},
-	{DURATION, 100},
+	{DURATION, 10},
 	{BREAKTIME, 0},
 	{REPETITIONS, 0},
 	{MIN_VOLTAGE, 700},
 	{MAX_VOLTAGE, 4095},
 	{RESOLUTION, 16},
-	{SAMPLES, 5}
+	{SAMPLES, 3}
 };
 
 uint16_t getSetting(SettingType setting) {
