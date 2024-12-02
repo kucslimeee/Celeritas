@@ -12,6 +12,7 @@
 #include "Timer.h"
 #include "Measurements.h"
 #include "SettingsStore.h"
+#include <stdbool.h>
 
 // PRIVATE GLOBALS
 volatile Request current_request;
@@ -60,6 +61,7 @@ void scheduler_finish_measurement() {
 }
 
 void scheduler_add_request(uint8_t id, uint32_t start_time, uint8_t config) {
+	bool instant_measurement = start_time == 0xffffffff;
 	Request new_request;
 	new_request.ID = id;
     new_request.type = getSetting(MODE_OF_OPERATION);
@@ -67,13 +69,13 @@ void scheduler_add_request(uint8_t id, uint32_t start_time, uint8_t config) {
     new_request.is_priority = config & 0x80; // the first bit of byte 5
     new_request.is_header = config & 0x40; // the second bit of byte 5
 	new_request.limit = getSetting(DURATION);
-	new_request.start_time = start_time;
+	new_request.start_time = (instant_measurement) ? Get_SystemTime() + 2 : start_time;
 	new_request.min_voltage = getSetting(MIN_VOLTAGE);
 	new_request.max_voltage = getSetting(MAX_VOLTAGE);
 	new_request.samples = getSetting(SAMPLES);
 	new_request.resolution = getSetting(RESOLUTION);
 
-	uint16_t repetitions = getSetting(REPETITIONS);
+	uint16_t repetitions = (instant_measurement) ? 0 : getSetting(REPETITIONS);
 	if(repetitions == 0) {
 		request_queue_put(new_request);
 	} else {

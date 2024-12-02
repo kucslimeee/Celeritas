@@ -6,7 +6,7 @@ Time in little endian encoding.
 The last three bytes (six zeros) are fillers for regular writes.
 
 Set dur (max hit measurement):
-wE0010500640078C2
+wE0011200640078C2
 
 Command Type: set dur (0xE0)
 Command ID: 1 (0x01)
