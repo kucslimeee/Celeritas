@@ -41,7 +41,12 @@ void selftest(Request request) {
 
 	select_measurement_channel();
 	HAL_ADC_Start(&hadc1);
-	uint16_t test_measurement = analogRead();
+	uint32_t sum = 0;
+	for (int i = 0; i < 1000; i++) {
+		sum += analogRead();
+		HAL_Delay(1);
+	}
+	uint16_t test_measurement = sum / 1000;
 	HAL_ADC_Stop(&hadc1);
 
 	uint8_t packet_data[15] = {
