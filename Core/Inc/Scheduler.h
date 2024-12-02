@@ -17,7 +17,7 @@ typedef enum RunningState {
 } RunningState;
 
 extern volatile RunningState status;
-extern uint16_t interrupt_counter;
+extern volatile uint8_t interrupt_counter;
 
 void scheduler_enter_sleep();
 void scheduler_on_command();

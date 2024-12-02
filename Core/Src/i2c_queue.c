@@ -7,10 +7,11 @@
 
  #include "i2c_queue.h"
 #include "Request.h"
+#include "Scheduler.h"
  #define QUEUE_SIZE 256
  #define ITEM_SIZE 16 // 15 elements + checksum
 
-extern uint16_t interrupt_counter;
+extern volatile uint8_t interrupt_counter;
 
  typedef struct {
  	uint8_t data[QUEUE_SIZE][ITEM_SIZE];

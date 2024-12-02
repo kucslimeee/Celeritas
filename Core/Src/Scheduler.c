@@ -20,7 +20,7 @@
 volatile Request current_request;
 volatile Request next_request;
 uint16_t duration;
-uint16_t interrupt_counter;
+volatile uint8_t interrupt_counter;
 bool command_complete = false;
 volatile RunningState status = IDLE;
 
