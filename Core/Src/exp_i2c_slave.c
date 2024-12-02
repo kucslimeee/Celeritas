@@ -75,7 +75,7 @@ extern void HAL_I2C_AddrCallback(I2C_HandleTypeDef *hi2c, uint8_t TransferDirect
 }
 
 bool isTimesyncCommand(){
- 	return RxData[0] == '6'; // the equalivent of 0x54 in ASCII
+ 	return RxData[0] == 0x54;
 }
 
 void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef *hi2c)
@@ -142,6 +142,7 @@ void process_TimesyncCommand(void)
 {
 	uint32_t timestamp = (RxData[4]<<24) | (RxData[3]<<16) | (RxData[2]<<8) | RxData[1];
 	Set_SystemTime(timestamp);
+	scheduler_on_command();
 }
 
 void process_Command()
@@ -165,8 +166,8 @@ void process_Command()
 		case 0x07:
 			reMeasure(command_id, command_dec);
 			break;
-		case '0x06':
-			//RequestSelfTest(uint8_t * message);
+		case 0x06:
+			reSelftest(command_id, command_dec);
 			break;
 		case '0x0F':
 			//ABReset();
@@ -189,6 +190,7 @@ void process_Command()
 		default:
 			break;
 		}
+		scheduler_on_command();
 	}
 	else{
 		//invalid command error

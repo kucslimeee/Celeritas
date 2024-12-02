@@ -11,6 +11,9 @@
 
 
 
-void max_hit_measurement(Request request);
+void measure(Request request);
+uint16_t analogRead();
+void select_measure_adc();
+
 
 #endif /* SRC_MEASUREMENTS_H_ */

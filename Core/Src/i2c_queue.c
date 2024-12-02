@@ -72,33 +72,58 @@
  	queue.size = 0;
  }
 
+ uint8_t* queue_fetch(uint8_t idx, bool* result) {
+	 if(queue.size == 0) {
+		 *result = false;
+		 return NULL;
+	 }
+
+	 result = true;
+	 return queue.data[queue.head + idx];
+ }
+
+ uint8_t queue_count(bool (*filter)(uint8_t* item)) {
+	 if(queue.size == 0) {
+		 return NULL;
+	 }
+
+	 uint8_t filtered_count = 0;
+	 for (int i = 0; i < queue.size; i++) {
+		 bool res;
+		 uint8_t* item = queue_fetch(i, &res);
+		 if(res)
+			 if (filter(item)) filtered_count++;
+	 }
+	 return filtered_count;
+ }
+
 
 void add_header(Request request, uint16_t duration){
 	 uint8_t headerData[ITEM_SIZE];
-	 uint16_t localDur = duration;
+	 //uint16_t localDur = duration;
 	 uint32_t localTime = request.start_time;
 	 headerData[0] = request.ID;
-	 headerData[2] = (uint8_t)(localDur >> 8);
-	 localDur -= (headerData[2] << 8);
-	 headerData[3] = (uint8_t)(localDur);
+	 //headerData[2] = (uint8_t)(localDur >> 8);
+	 //localDur -= (headerData[2] << 8);
+	 //headerData[3] = (uint8_t)(localDur);
 	 for(int i = 0; i < 4; i++){
 		 headerData[4+i] = (uint8_t)(localTime >> 24-i*8);
 		 localTime -= (headerData[i] << 24-i*8);
 	 }
-	 //headerData[9] = request.number_of_Intervals;
+	 headerData[9] = request.resolution;
 	 headerData[10] = request.min_voltage;
 	 headerData[11] = request.max_voltage;
 	 headerData[12] = 0;
 	 headerData[13] = 0;
 	 headerData[14] = 0;
 	 headerData[15] = 0xFF;
-	 //queue_push(headerData, priority???, checksum???);
+	 queue_push(headerData, request.is_priority, true);
 
  }
 
 
  void add_spectrum(Request request, uint8_t* spectrum, uint8_t resolution){
-	 const uint8_t everyBit = 15*8; //120, we can modify to 128 and it should work
+	 const uint8_t everyBit = 16*8; //120, we can modify to 128 and it should work
 	 uint8_t importantBits = everyBit/resolution; // how many bits do we keep in
 
 	 uint8_t bitArr[everyBit]; //120 byte
@@ -132,14 +157,15 @@ void add_header(Request request, uint16_t duration){
 
  void add_error(Request request, uint8_t error_type){
 	 uint8_t errorData[15] = {0};
+	 errorData[14] = 0xD5;
 	 if(error_type == TIMEOUT){
-		 errorData[14] = 0xFD;
+		 errorData[13] = 0xFD;
 	 }
 	 if(error_type == INTERRUPT){
-		 errorData[14] = 0xFB;
+		 errorData[13] = 0xFB;
 	 }
 	 if(error_type == CORRUPTED){
-	 	errorData[14] = 0xF7;
+	 	errorData[13] = 0xF7;
 	 }
 	 queue_push(errorData, request.is_priority, true);
  }

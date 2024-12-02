@@ -12,5 +12,6 @@
 #include "Commands/ReMeasure.h"
 #include "Commands/SetDur.h"
 #include "Commands/SetScale.h"
+#include "Commands/ReSelftest.h"
 
 #endif // COM_REMEASURE_H

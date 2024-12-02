@@ -23,7 +23,6 @@
 /* USER CODE BEGIN Includes */
 #include "RequestQueue.h"
 #include "i2c_queue.h"
-#include "Measurements.h"
 #include "Scheduler.h"
 /* USER CODE END Includes */
 
@@ -98,12 +97,13 @@ int main(void)
   MX_I2C2_Init();
   /* USER CODE BEGIN 2 */
   if(HAL_I2C_EnableListen_IT(&hi2c2) != HAL_OK){
-      	  Error_Handler();
-       }
-       HAL_ADC_Start(&hadc1);
-       HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_SET);
-       uint8_t data[] = {0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E};
-       queue_push(data, false, false);
+       Error_Handler();
+  }
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_SET);
+  uint8_t data[] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E};
+  queue_push(data, false, false);
+
+  //scheduler_enter_sleep();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -244,7 +244,7 @@ static void MX_I2C2_Init(void)
   hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
   hi2c2.Init.OwnAddress2 = 0;
   hi2c2.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
-  hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_ENABLE;
   hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
   if (HAL_I2C_Init(&hi2c2) != HAL_OK)
   {

@@ -5,6 +5,7 @@
  *     Author: adamg
  */
 #include "Timer.h"
+#include "main.h"
 #include "Scheduler.h"
 
 volatile uint32_t current_unix_time = 0;
@@ -15,11 +16,14 @@ volatile uint16_t counter = 0;
  */
 void Systick_Interrupt(){
 	counter++;
+	if (counter % 100 == 0) {
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, counter % 200 == 0);
+	}
 	if (counter == 1000) {
 		current_unix_time++;
 		counter = 0;
+		scheduler_on_even_second();
 	}
-	scheduler_on_even_second();
 }
 
 

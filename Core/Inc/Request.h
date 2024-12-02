@@ -23,7 +23,7 @@ typedef struct {
 	bool is_okay;
 	bool is_priority;
 	bool is_header;
-	uint8_t limit;
+	uint16_t limit;
 	uint32_t start_time;
 	uint16_t min_voltage;
 	uint16_t max_voltage;
