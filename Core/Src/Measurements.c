@@ -94,3 +94,11 @@ uint16_t analogRead()
 	return HAL_ADC_GetValue(&hadc1); // get the adc value
 }
 
+uint16_t get_temperature() {
+	select_temperature_channel();
+	HAL_ADC_Start(&hadc1);
+	HAL_ADC_PollForConversion(&hadc1, 100);
+	uint16_t adc = HAL_ADC_GetValue(&hadc1);
+	HAL_ADC_Stop(&hadc1);
+	return adc;
+}
