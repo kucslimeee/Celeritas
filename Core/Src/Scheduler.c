@@ -16,13 +16,11 @@
 #include <stdbool.h>
 #include "Selftest.h"
 
-#define INTERRUPT_TIME 10 //s
-
 // PRIVATE GLOBALS
 volatile Request current_request;
 volatile Request next_request;
 uint16_t duration;
-uint16_t interrupt_timer;
+uint16_t interrupt_counter;
 bool command_complete = false;
 volatile RunningState status = IDLE;
 
@@ -52,11 +50,6 @@ void scheduler_on_even_second() {
 		if (duration == 0) status = FINISHED;
 	}
 
-	if(status == INTERRUPTED) {
-		interrupt_timer--;
-		if (interrupt_timer == 0) status = IDLE;
-	}
-
 	if(status != IDLE) return;
 	if(next_request.start_time > 0) {
 		current_request = next_request;
@@ -78,8 +71,7 @@ void scheduler_on_even_second() {
 void scheduler_on_i2c_communication() {
 	scheduler_wakeup();
 	if(status != RUNNING) return;
-	status = INTERRUPTED;
-	interrupt_timer = INTERRUPT_TIME;
+	if(interrupt_counter+1 <= 0xFF) interrupt_counter++;
 }
 
 void scheduler_update() {
@@ -99,8 +91,7 @@ void scheduler_update() {
 			scheduler_enter_sleep();
 		}
 	}
-	if (status != IDLE && status != STARTING && status != RUNNING &&
-		status != INTERRUPTED && status != FINISHED) {
+	if (status != IDLE && status != STARTING && status != RUNNING && status != FINISHED) {
 		status = IDLE;
 	}
 
@@ -116,6 +107,7 @@ void scheduler_update() {
 
 void scheduler_finish_measurement() {
 	status = IDLE;
+	interrupt_counter == 0;
 	scheduler_enter_sleep();
 }
 

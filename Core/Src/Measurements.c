@@ -46,23 +46,18 @@ void measure(Request request){
 	HAL_ADC_Stop(&hadc1);
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 0);
-	if(status != INTERRUPTED) {
-		if(request.is_header){
-			if(request.is_priority){
-				add_spectrum(request, &measurementData, resolution);
-				add_header(request, request.limit);
-			} else {
-				add_header(request, request.limit);
-				add_spectrum(request, &measurementData, resolution);
-			}
-		}else {
+	if(request.is_header){
+		if(request.is_priority){
 			add_spectrum(request, &measurementData, resolution);
-		}
+			add_header(request, request.limit);
+		} else {
+			add_header(request, request.limit);
+			add_spectrum(request, &measurementData, resolution);
+			}
 	}else {
-		add_error(request, INTERRUPT);
+		add_spectrum(request, &measurementData, resolution);
 	}
 	scheduler_finish_measurement();
-
 }
 
 /*

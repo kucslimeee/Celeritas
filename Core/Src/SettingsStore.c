@@ -25,7 +25,7 @@ Setting settings[9] = {
 	{DURATION, 10},
 	{BREAKTIME, 0},
 	{REPETITIONS, 0},
-	{MIN_VOLTAGE, 700},
+	{MIN_VOLTAGE, 300},
 	{MAX_VOLTAGE, 4095},
 	{RESOLUTION, 16},
 	{SAMPLES, 3}

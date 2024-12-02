@@ -10,7 +10,7 @@
  #define QUEUE_SIZE 256
  #define ITEM_SIZE 16 // 15 elements + checksum
 
-
+extern uint16_t interrupt_counter;
 
  typedef struct {
  	uint8_t data[QUEUE_SIZE][ITEM_SIZE];
@@ -103,7 +103,7 @@ void add_header(Request request, uint16_t duration){
 	 //uint16_t localDur = duration;
 	 uint32_t localTime = request.start_time;
 	 headerData[0] = request.ID;
-	 //headerData[2] = (uint8_t)(localDur >> 8);
+	 headerData[2] = (uint8_t)(interrupt_counter & 0xFF);
 	 //localDur -= (headerData[2] << 8);
 	 //headerData[3] = (uint8_t)(localDur);
 	 for(int i = 0; i < 4; i++){
