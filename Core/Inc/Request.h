@@ -12,6 +12,7 @@
 #include <stdbool.h>
 
 typedef enum class {
+	UNKNOWN = 0x00,
 	SELFTEST = 0x01,
 	MAX_TIME = 0x02,
 	MAX_HITS = 0x03

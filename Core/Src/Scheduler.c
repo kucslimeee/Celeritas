@@ -21,16 +21,14 @@ volatile Request current_request;
 volatile Request next_request;
 uint16_t duration;
 volatile uint8_t interrupt_counter;
+volatile uint8_t sleep_timer;
 bool command_complete = false;
 volatile RunningState status = IDLE;
 
 // METHOD IMPLEMENTATIONS
 
 void scheduler_enter_sleep() {
-	HAL_SuspendTick();
-	//HAL_PWR_EnableSleepOnExit ();
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, 1);
-	HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
+	sleep_timer = 60;
 }
 
 void scheduler_wakeup() {
@@ -48,6 +46,10 @@ void scheduler_on_even_second() {
 	if(current_request.type == MAX_TIME && status == RUNNING) {
 		duration--;
 		if (duration == 0) status = FINISHED;
+	}
+
+	if (sleep_timer > 0) {
+		if (sleep_timer-1 > 0) sleep_timer--;
 	}
 
 	if(status != IDLE) return;
@@ -95,9 +97,17 @@ void scheduler_update() {
 		status = IDLE;
 	}
 
+	if (sleep_timer == 1) {
+		sleep_timer = 0;
+		HAL_SuspendTick();
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, 1);
+		HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
+	}
+
 	if(status != STARTING) return;
 	if(Get_SystemTime() != current_request.start_time) return;
 	status = RUNNING;
+	sleep_timer = 0;
 	if (current_request.type == SELFTEST) selftest(current_request);
 	else {
 		if(current_request.type == MAX_TIME) duration = current_request.limit;
@@ -107,8 +117,19 @@ void scheduler_update() {
 
 void scheduler_finish_measurement() {
 	status = IDLE;
-	interrupt_counter == 0;
+	interrupt_counter = 0;
 	scheduler_enter_sleep();
+	current_request.ID = 0;
+	current_request.type = UNKNOWN;
+	current_request.is_okay = false;
+	current_request.is_priority = false;
+	current_request.is_header = false;
+	current_request.limit = 0;
+	current_request.start_time = 0;
+	current_request.min_voltage = 0;
+	current_request.max_voltage = 0;
+	current_request.resolution = 0;
+	current_request.samples = 0;
 }
 
 
