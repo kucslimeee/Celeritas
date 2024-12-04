@@ -61,7 +61,7 @@
 #define FLASH_USER_START_ADDR   ADDR_FLASH_PAGE_16   /* Start @ of user Flash area */
 #define FLASH_USER_END_ADDR     ADDR_FLASH_PAGE_64   /* End @ of user Flash area */
 
-#define SETTINGS_ADDR ADDR_FLASH_PAGE_16
+#define SETTINGS_ADDR ADDR_FLASH_PAGE_17
 #include <stdint.h>
 void flash_load(uint32_t address, uint16_t length, uint16_t* data);
 void flash_save(uint32_t address, uint16_t length, uint16_t* data);

@@ -21,7 +21,7 @@ void flash_save(uint32_t address, uint16_t length, uint16_t* data) {
 	static FLASH_EraseInitTypeDef EraseInitStruct;
 	uint32_t PageError;
 	EraseInitStruct.TypeErase   = FLASH_TYPEERASE_PAGES;
-	EraseInitStruct.PageAddress = FLASH_USER_START_ADDR;
+	EraseInitStruct.PageAddress = address;
 	EraseInitStruct.NbPages     = 1;
 
 	if (HAL_FLASHEx_Erase(&EraseInitStruct, &PageError) != HAL_OK)
@@ -30,8 +30,9 @@ void flash_save(uint32_t address, uint16_t length, uint16_t* data) {
 	/* Program the user Flash area word by word
 	  (area defined by FLASH_USER_START_ADDR and FLASH_USER_END_ADDR) ***********/
 	for (uint16_t i = 0; i < length; i++) {
-	   if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, address, data[i]) != HAL_OK)
-		   Error_Handler();
+	    if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, address, data[i]) != HAL_OK)
+	    	Error_Handler();
+
 	    address += 2;
 	}
 

@@ -51,7 +51,6 @@ uint16_t getSetting(SettingType setting) {
 
 void setSetting(SettingType setting, uint16_t value) {
     settings[setting].value = value;
-    saveSettings();
 }
 
 void formatSetting(Setting* setting, uint16_t offset, uint16_t* output);
