@@ -13,25 +13,22 @@
 #include "main.h"
 #include "Measurements.h"
 #include "SettingsStore.h"
+#include <stdbool.h>
 #include "Selftest.h"
-
-#define INTERRUPT_TIME 10 //s
 
 // PRIVATE GLOBALS
 volatile Request current_request;
 volatile Request next_request;
 uint16_t duration;
-uint16_t interrupt_timer;
+volatile uint8_t interrupt_counter;
+volatile uint8_t sleep_timer;
 bool command_complete = false;
 volatile RunningState status = IDLE;
 
 // METHOD IMPLEMENTATIONS
 
 void scheduler_enter_sleep() {
-	HAL_SuspendTick();
-	//HAL_PWR_EnableSleepOnExit ();
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, 1);
-	HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
+	sleep_timer = 60;
 }
 
 void scheduler_wakeup() {
@@ -51,9 +48,8 @@ void scheduler_on_even_second() {
 		if (duration == 0) status = FINISHED;
 	}
 
-	if(status == INTERRUPTED) {
-		interrupt_timer--;
-		if (interrupt_timer == 0) status = IDLE;
+	if (sleep_timer > 0) {
+		if (sleep_timer-1 > 0) sleep_timer--;
 	}
 
 	if(status != IDLE) return;
@@ -77,8 +73,7 @@ void scheduler_on_even_second() {
 void scheduler_on_i2c_communication() {
 	scheduler_wakeup();
 	if(status != RUNNING) return;
-	status = INTERRUPTED;
-	interrupt_timer = INTERRUPT_TIME;
+	if(interrupt_counter+1 <= 0xFF) interrupt_counter++;
 }
 
 void scheduler_update() {
@@ -98,14 +93,21 @@ void scheduler_update() {
 			scheduler_enter_sleep();
 		}
 	}
-	if (status != IDLE && status != STARTING && status != RUNNING &&
-		status != INTERRUPTED && status != FINISHED) {
+	if (status != IDLE && status != STARTING && status != RUNNING && status != FINISHED) {
 		status = IDLE;
+	}
+
+	if (sleep_timer == 1) {
+		sleep_timer = 0;
+		HAL_SuspendTick();
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, 1);
+		HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
 	}
 
 	if(status != STARTING) return;
 	if(Get_SystemTime() != current_request.start_time) return;
 	status = RUNNING;
+	sleep_timer = 0;
 	if (current_request.type == SELFTEST) selftest(current_request);
 	else {
 		if(current_request.type == MAX_TIME) duration = current_request.limit;
@@ -115,10 +117,24 @@ void scheduler_update() {
 
 void scheduler_finish_measurement() {
 	status = IDLE;
+	interrupt_counter = 0;
 	scheduler_enter_sleep();
+	current_request.ID = 0;
+	current_request.type = UNKNOWN;
+	current_request.is_okay = false;
+	current_request.is_priority = false;
+	current_request.is_header = false;
+	current_request.limit = 0;
+	current_request.start_time = 0;
+	current_request.min_voltage = 0;
+	current_request.max_voltage = 0;
+	current_request.resolution = 0;
+	current_request.samples = 0;
 }
 
-void scheduler_request_measurement(uint8_t id, uint32_t start_time, uint8_t config) {
+
+void scheduler_add_request(uint8_t id, uint32_t start_time, uint8_t config) {
+	bool instant_measurement = start_time == 0xffffffff;
 	Request new_request;
 	new_request.ID = id;
     new_request.type = getSetting(MODE_OF_OPERATION);
@@ -126,13 +142,13 @@ void scheduler_request_measurement(uint8_t id, uint32_t start_time, uint8_t conf
     new_request.is_priority = config & 0x80; // the first bit of byte 5
     new_request.is_header = config & 0x40; // the second bit of byte 5
 	new_request.limit = getSetting(DURATION);
-	new_request.start_time = start_time;
+	new_request.start_time = (instant_measurement) ? Get_SystemTime() + 2 : start_time;
 	new_request.min_voltage = getSetting(MIN_VOLTAGE);
 	new_request.max_voltage = getSetting(MAX_VOLTAGE);
 	new_request.samples = getSetting(SAMPLES);
 	new_request.resolution = getSetting(RESOLUTION);
 
-	uint16_t repetitions = getSetting(REPETITIONS);
+	uint16_t repetitions = (instant_measurement) ? 0 : getSetting(REPETITIONS);
 	if(repetitions == 0) {
 		request_queue_put(new_request);
 	} else {

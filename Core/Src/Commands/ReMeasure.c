@@ -12,5 +12,5 @@
 
 void reMeasure(uint8_t id, uint8_t dec[]) {
     uint32_t start_time = (dec[3] << 24) | (dec[2] << 16) | (dec[1] << 8) | dec[0];
-    scheduler_request_measurement(id, start_time, dec[4]);
+    scheduler_add_request(id, start_time, dec[4]);
 }

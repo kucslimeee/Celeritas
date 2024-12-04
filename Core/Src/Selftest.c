@@ -15,8 +15,6 @@
 
 extern ADC_HandleTypeDef hadc1;
 
-uint16_t get_temperature();
-
 void selftest(Request request) {
 	bool error_filter (uint8_t* item) {
 		return *(item+13) == 0xD5;
@@ -43,7 +41,12 @@ void selftest(Request request) {
 
 	select_measurement_channel();
 	HAL_ADC_Start(&hadc1);
-	uint16_t test_measurement = analogRead();
+	uint32_t sum = 0;
+	for (int i = 0; i < 1000; i++) {
+		sum += analogRead();
+		HAL_Delay(1);
+	}
+	uint16_t test_measurement = sum / 1000;
 	HAL_ADC_Stop(&hadc1);
 
 	uint8_t packet_data[15] = {
@@ -67,11 +70,4 @@ void selftest(Request request) {
 	scheduler_finish_measurement();
 }
 
-uint16_t get_temperature() {
-	select_temperature_channel();
-	HAL_ADC_Start(&hadc1);
-	HAL_ADC_PollForConversion(&hadc1, 100);
-	uint16_t adc = HAL_ADC_GetValue(&hadc1);
-	HAL_ADC_Stop(&hadc1);
-	return adc;
-}
+

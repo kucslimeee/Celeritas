@@ -7,10 +7,11 @@
 
  #include "i2c_queue.h"
 #include "Request.h"
+#include "Scheduler.h"
  #define QUEUE_SIZE 256
  #define ITEM_SIZE 16 // 15 elements + checksum
 
-
+extern volatile uint8_t interrupt_counter;
 
  typedef struct {
  	uint8_t data[QUEUE_SIZE][ITEM_SIZE];
@@ -100,19 +101,24 @@
 
 void add_header(Request request, uint16_t duration){
 	 uint8_t headerData[ITEM_SIZE];
-	 //uint16_t localDur = duration;
-	 uint32_t localTime = request.start_time;
+
 	 headerData[0] = request.ID;
-	 //headerData[2] = (uint8_t)(localDur >> 8);
-	 //localDur -= (headerData[2] << 8);
-	 //headerData[3] = (uint8_t)(localDur);
+	 headerData[1] = (uint8_t)(interrupt_counter & 0xFF);
+
+	 uint16_t temp = get_temperature();
+	 headerData[2] = temp >> 8;
+	 headerData[3] = temp & 0xFF;
+
+	 uint32_t localTime = request.start_time;
 	 for(int i = 0; i < 4; i++){
 		 headerData[4+i] = (uint8_t)(localTime >> 24-i*8);
 		 localTime -= (headerData[i] << 24-i*8);
 	 }
-	 headerData[9] = request.resolution;
-	 headerData[10] = request.min_voltage;
-	 headerData[11] = request.max_voltage;
+
+	 headerData[8] = request.resolution;
+	 headerData[9] = request.min_voltage >> 4;
+	 headerData[10] = ((request.min_voltage & 0xF) << 4) | (request.max_voltage >> 8);
+	 headerData[11] = request.max_voltage & 0xFF;
 	 headerData[12] = 0;
 	 headerData[13] = 0;
 	 headerData[14] = 0;

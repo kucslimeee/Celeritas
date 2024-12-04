@@ -13,6 +13,7 @@ Time in little endian encoding.
 Set dur (max hit measurement):
 wE000B1006400786D
 
+
 Command Type: set dur (0xE0)
 Command ID: 1 (0x01)
 Number of repetitions: 2 (0x02), mode of operation bit: 1 (0x01), is okaying bit: 0 (0x00) = 0x0A 

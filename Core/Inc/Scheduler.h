@@ -13,11 +13,11 @@ typedef enum RunningState {
 	STARTING,
 	RUNNING,
 	FINISHED,
-	INTERRUPTED,
 	IDLE
 } RunningState;
 
 extern volatile RunningState status;
+extern volatile uint8_t interrupt_counter;
 
 void scheduler_enter_sleep();
 void scheduler_on_command();
