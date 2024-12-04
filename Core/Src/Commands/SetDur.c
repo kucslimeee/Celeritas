@@ -7,6 +7,7 @@
 #include "Commands/SetDur.h"
 #include "Request.h"
 #include "SettingsStore.h"
+#include "main.h"
 
 void setDur(uint8_t id, uint8_t* dec) {
     setSetting(REPETITIONS, (*dec)>>2);
