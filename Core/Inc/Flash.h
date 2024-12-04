@@ -1,18 +1,13 @@
 /*
  * Flash.h
  *
- *  Created on: Dec 1, 2024
+ *  Created on: Dec 4, 2024
  *      Author: hpraszpi
  */
 
 #ifndef INC_FLASH_H_
 #define INC_FLASH_H_
-#include <stdint.h>
 
-void flash_load(uint32_t address, uint16_t length, uint16_t* result);
-void flash_save(uint32_t page, uint16_t length, uint16_t* data);
-
-/* Base address of the Flash pages */
 #define ADDR_FLASH_PAGE_0     ((uint32_t)0x08000000) /* Base address of Page 0, 2 Kbytes */
 #define ADDR_FLASH_PAGE_1     ((uint32_t)0x08000800) /* Base address of Page 1, 2 Kbytes */
 #define ADDR_FLASH_PAGE_2     ((uint32_t)0x08001000) /* Base address of Page 2, 2 Kbytes */
@@ -146,5 +141,8 @@ void flash_save(uint32_t page, uint16_t length, uint16_t* data);
 #define FLASH_USER_END_ADDR     ADDR_FLASH_PAGE_64   /* End @ of user Flash area */
 
 #define SETTINGS_ADDR ADDR_FLASH_PAGE_16
+#include <stdint.h>
+void flash_load(uint32_t address, uint16_t length, uint16_t* data);
+void flash_save(uint32_t address, uint16_t length, uint16_t* data);
 
 #endif /* INC_FLASH_H_ */
