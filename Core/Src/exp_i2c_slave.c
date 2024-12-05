@@ -23,6 +23,7 @@
 #include "i2c_queue.h"
 #include "Timer.h"
 #include "Scheduler.h"
+#include "Flash.h"
 
 extern I2C_HandleTypeDef hi2c1;
 extern ADC_HandleTypeDef hadc1;

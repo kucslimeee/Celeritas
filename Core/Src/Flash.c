@@ -40,3 +40,17 @@ void flash_save(uint32_t address, uint16_t length, uint16_t* data) {
 	       to protect the FLASH memory against possible unwanted operation) *********/
     HAL_FLASH_Lock();
 }
+
+void flash_reset() {
+	HAL_FLASH_Unlock();
+
+	static FLASH_EraseInitTypeDef EraseInitStruct;
+	uint32_t PageError;
+	EraseInitStruct.TypeErase   = FLASH_TYPEERASE_PAGES;
+	EraseInitStruct.PageAddress = FLASH_USER_START_ADDR;
+	EraseInitStruct.NbPages     = (FLASH_USER_END_ADDR - FLASH_USER_START_ADDR) / FLASH_PAGE_SIZE + 1;
+
+	if (HAL_FLASHEx_Erase(&EraseInitStruct, &PageError) != HAL_OK)
+	  Error_Handler();
+	HAL_FLASH_Lock();
+}

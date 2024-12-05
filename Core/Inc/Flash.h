@@ -26,7 +26,7 @@
 #define ADDR_FLASH_PAGE_31    ((uint32_t)0x0800F800) /* Base address of Page 31, 2 Kbytes */
 
 #define FLASH_USER_START_ADDR   ADDR_FLASH_PAGE_20   /* Start @ of user Flash area */
-#define FLASH_USER_END_ADDR     ADDR_FLASH_PAGE_31   /* End @ of user Flash area */
+#define FLASH_USER_END_ADDR     ADDR_FLASH_PAGE_23   /* End @ of user Flash area */
 
 #define SETTINGS_ADDR 		ADDR_FLASH_PAGE_20
 #define I2C_QUEUE_ADDR		ADDR_FLASH_PAGE_21
@@ -37,5 +37,6 @@
 #include <stdint.h>
 void flash_load(uint32_t address, uint16_t length, uint16_t* data);
 void flash_save(uint32_t address, uint16_t length, uint16_t* data);
+void flash_reset();
 
 #endif /* INC_FLASH_H_ */
