@@ -32,4 +32,18 @@ typedef struct {
 	uint8_t resolution;
 } Request;
 
+static Request empty_request = {
+	    .ID = 0,
+	    .type = 0,          // Assuming RequestType is an enum or similar, set to its default value
+	    .is_okay = false,
+	    .is_priority = false,
+	    .is_header = false,
+	    .limit = 0,
+	    .start_time = 0,
+	    .min_voltage = 0,
+	    .max_voltage = 0,
+	    .samples = 0,
+	    .resolution = 0
+	};
+
 #endif /* INC_REQUEST_HANDLER_H_ */

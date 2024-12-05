@@ -24,6 +24,7 @@
 #include "RequestQueue.h"
 #include "i2c_queue.h"
 #include "Scheduler.h"
+#include "SettingsStore.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -81,7 +82,6 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -99,10 +99,17 @@ int main(void)
   if(HAL_I2C_EnableListen_IT(&hi2c2) != HAL_OK){
        Error_Handler();
   }
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_SET);
-  uint8_t data[] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E};
-  queue_push(data, false, false);
 
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_SET);
+  settingStoreInit();
+  request_queue_init();
+  i2c_queue_init();
+  scheduler_init();
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_RESET);
+  uint8_t data[] = {
+		  0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
+		  0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
+  i2c_queue_push(data, false, false);
   scheduler_enter_sleep();
   /* USER CODE END 2 */
 
@@ -137,7 +144,8 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
   RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL8;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  HAL_StatusTypeDef osc_state = HAL_RCC_OscConfig(&RCC_OscInitStruct);
+  if (osc_state != HAL_OK)
   {
     Error_Handler();
   }

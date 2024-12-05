@@ -18,8 +18,11 @@ typedef enum  {
 	SAMPLES
 }SettingType;
 
+
+void settingStoreInit();
 uint16_t getSetting(SettingType setting);
 
 void setSetting(SettingType setting, uint16_t value);
+void saveSettings();
 
 #endif //SETTINGSTORE_H

@@ -5,11 +5,22 @@
  * 	   Author: badam
  */
 #include "RequestQueue.h"
+#include "Queue.h"
+#include "Flash.h"
+#define REQUEST_QUEUE_SIZE QUEUE_SIZE
 
-static Request request_queue[REQUEST_QUEUE_SIZE];
-static uint8_t head = 0; // starting index of the queue (0 - REQUEST_QUEUE_SIZE-1)
-static uint8_t tail = 0; // ending index of the queue (0 - REQUEST_QUEUE_SIZE-1)
-static uint8_t size = 0; // number of elements in the queue
+volatile Queue request_queue = {
+		.item_size = sizeof(Request),
+		.head = 0,
+		.tail = 0,
+		.size = 0,
+		.max_size = 100,
+		.flash_page = REQ_QUEUE_ADDR,
+};
+
+void request_queue_init() {
+	queue_init(&request_queue);
+}
 
 /** Finds the position to insert the new request based on its start time.
   * Starts at the head and goes until arriving at the tail. If head == tail (size == 0),
@@ -17,12 +28,12 @@ static uint8_t size = 0; // number of elements in the queue
   * @return The position to insert the new request
   */
 static uint8_t find_insert_position(uint32_t time){
- 	for (int i = head; i != tail; i++){
- 		if (request_queue[i].start_time>time){
+ 	for (int i = request_queue.head; i != request_queue.tail; i++){
+ 		if (((Request* )request_queue.data+i)->start_time > time){
  			return i;
  		}
  	}
- 	return tail;
+ 	return request_queue.tail;
  }
 
 /**
@@ -30,15 +41,15 @@ static uint8_t find_insert_position(uint32_t time){
   * If the queue is full, the request is discarded.
   */
 void request_queue_put(Request request){
-	if (size >= REQUEST_QUEUE_SIZE) return;
+	if (request_queue.size >= REQUEST_QUEUE_SIZE) return;
 
 	uint8_t insert_pos = find_insert_position(request.start_time);
-	for (int i = size; i > insert_pos; i--){
-		request_queue[i] = request_queue[i-1];
+	for (int i = request_queue.tail; i > insert_pos; i--){
+		memcpy(request_queue.data+i, request_queue.data+(i-1)*request_queue.item_size, request_queue.item_size);
 	}
-	request_queue[insert_pos] = request;
-	tail = (tail+1) % REQUEST_QUEUE_SIZE;
-	size++;
+	memcpy((Request* )request_queue.data+insert_pos*request_queue.item_size, &request, request_queue.item_size);
+	request_queue.tail = (request_queue.tail+1) % REQUEST_QUEUE_SIZE;
+	request_queue.size++;
 }
 
 /**
@@ -47,16 +58,10 @@ void request_queue_put(Request request){
   * Moves the head pointer and decrements the size of the queue.
   * @return The next request from the queue
   */
-Request request_queue_get(void){
-	if (size == 0){
-		return (Request){ .start_time = 0 };
-	}
-
-	Request first_request = request_queue[head];
-	head = (head+1) % REQUEST_QUEUE_SIZE;
-	size--;
-
-	return first_request;
+Request request_queue_get(void) {
+	Request* request = &empty_request;
+	queue_get(&request_queue, &request);
+	return *request;
 }
 
 /**
@@ -64,27 +69,22 @@ Request request_queue_get(void){
   * If the queue is empty or the ID is not found, the function does nothing.
   */
 void request_queue_delete(uint8_t id){
-	for (int i = 0; i < size; i++){
-		uint8_t index = (head+i) % REQUEST_QUEUE_SIZE;
-		if (request_queue[index].ID == id){
-			for (int j = i; j < size-1; j++){
-				uint8_t current = (head+j) % REQUEST_QUEUE_SIZE;
-				uint8_t next = (head+j+1) % REQUEST_QUEUE_SIZE;
-				request_queue[current] = request_queue[next]; // move all requests on down
-			}
-			tail = (tail-1+REQUEST_QUEUE_SIZE) % REQUEST_QUEUE_SIZE;
-			size--;
-			return;
-		}
+	bool condition(void* item){
+		return ((Request* )item)->ID == id;
 	}
-	return; // Error: ID not found
+
+	queue_delete(&request_queue, condition);
 }
 
 /**
   * Clears the request queue by resetting all pointers and the size.
   */
 void request_queue_clear(void){
-	head = 0;
-	tail = 0;
-	size = 0;
+	request_queue.head = 0;
+	request_queue.tail = 0;
+	request_queue.size = 0;
+}
+
+void request_queue_save(){
+	queue_save(&request_queue);
 }

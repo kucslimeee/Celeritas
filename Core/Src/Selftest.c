@@ -20,13 +20,13 @@ void selftest(Request request) {
 		return *(item+13) == 0xD5;
 	}
 
-	uint8_t error_count = queue_count(error_filter);
+	uint8_t error_count = i2c_queue_count(error_filter);
 	uint16_t temperature = get_temperature();
 	uint32_t time = Get_SystemTime();
 
 	uint8_t fetch_packet_id(uint8_t idx) {
 		bool success;
-		uint8_t* packet = queue_fetch(idx, &success);
+		uint8_t* packet = i2c_queue_fetch(idx, &success);
 		if(success) {
 			uint8_t type_byte = packet[14];
 			if (type_byte == 0xD5 || type_byte == 0xFE) return packet[0];

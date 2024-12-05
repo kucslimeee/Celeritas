@@ -23,6 +23,7 @@
 #include "i2c_queue.h"
 #include "Timer.h"
 #include "Scheduler.h"
+#include "Flash.h"
 
 extern I2C_HandleTypeDef hi2c1;
 extern ADC_HandleTypeDef hadc1;
@@ -62,8 +63,8 @@ extern void HAL_I2C_AddrCallback(I2C_HandleTypeDef *hi2c, uint8_t TransferDirect
 	else
 	{
 		txcount = 0;
-		bool result = false;
-		uint8_t * packet = queue_get(&result);
+		bool result;
+		uint8_t* packet = i2c_queue_get(&result);
 		if(!result) packet = TX_TEMPLATE;
 		else {
 			for(int i = 0; i < TxSIZE; i++) {
@@ -108,6 +109,7 @@ void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef *hi2c)
 	txcount++;
 	if(txcount == TxSIZE-1){
 		HAL_I2C_Slave_Seq_Transmit_IT(hi2c, TxData+txcount, 1, I2C_LAST_FRAME);
+		scheduler_on_command();
 	}
 	else{
 		HAL_I2C_Slave_Seq_Transmit_IT(hi2c, TxData+txcount, 1, I2C_NEXT_FRAME);

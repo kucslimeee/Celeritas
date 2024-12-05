@@ -13,4 +13,5 @@ void setScale(uint8_t id, uint8_t* dec) {
     setSetting(MAX_VOLTAGE, (uint16_t)(((dec[1]%16)<<8)+dec[2]));
     setSetting(RESOLUTION, (uint16_t)dec[3]);
     setSetting(SAMPLES, (uint16_t)dec[4]);
+    saveSettings();
 }

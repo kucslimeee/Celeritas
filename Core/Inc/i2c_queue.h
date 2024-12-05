@@ -18,9 +18,12 @@
 #define INTERRUPT 0xFB
 #define CORRUPTED 0xF7
 
- void queue_push(uint8_t* item, bool priority, bool checksum);
- uint8_t queue_count(bool (*filter)(uint8_t* item));
- uint8_t* queue_fetch(uint8_t idx, bool *result);
+void i2c_queue_init();
+void i2c_queue_push(uint8_t* item, bool priority, bool checksum);
+uint8_t* i2c_queue_get(bool* result);
+uint8_t i2c_queue_count(bool (*filter)(uint8_t* item));
+uint8_t* i2c_queue_fetch(uint8_t idx, bool *result);
+void i2c_queue_save();
 
 void add_header(Request request, uint16_t duration);
 void add_spectrum(Request request, uint8_t* spectrum, uint8_t resolution);

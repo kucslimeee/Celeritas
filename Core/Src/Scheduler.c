@@ -14,7 +14,9 @@
 #include "Measurements.h"
 #include "SettingsStore.h"
 #include <stdbool.h>
+#include <string.h>
 #include "Selftest.h"
+#include "Flash.h"
 
 // PRIVATE GLOBALS
 volatile Request current_request;
@@ -25,7 +27,26 @@ volatile uint8_t sleep_timer;
 bool command_complete = false;
 volatile RunningState status = IDLE;
 
-// METHOD IMPLEMENTATIONS
+// PRIVATE API
+void scheduler_init() {
+	uint16_t loaded_state[24];
+	flash_load(SCHEDULER_ADDR, 24, &loaded_state);
+	if(loaded_state[0] != 0xFFEE) return;
+	Set_SystemTime(loaded_state[1] << 16 | loaded_state[2]);
+	status = (RunningState)loaded_state[3];
+	memcpy(&current_request, loaded_state+4, sizeof(Request));
+	memcpy(&next_request, loaded_state+14, sizeof(Request));
+}
+
+void scheduler_save_state() {
+	uint32_t time = Get_SystemTime();
+	uint16_t state[24] = {0xFFEE, time >> 16, time & 0xFFFF, status};
+	memcpy(state+4, &current_request, sizeof(Request));
+	memcpy(state+14, &next_request, sizeof(Request));
+	flash_save(SCHEDULER_ADDR, 24, &state);
+}
+
+// PUBLIC METHOD IMPLEMENTATIONS
 
 void scheduler_enter_sleep() {
 	sleep_timer = 60;
@@ -33,7 +54,6 @@ void scheduler_enter_sleep() {
 
 void scheduler_wakeup() {
 	HAL_ResumeTick();
-	//HAL_PWR_DisableSleepOnExit ();
 }
 
 void scheduler_on_command() {
@@ -82,12 +102,13 @@ void scheduler_update() {
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1);
 		HAL_Delay(200);
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
-		HAL_Delay(200);
+		i2c_queue_save();
+		request_queue_save();
+		scheduler_save_state();
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1);
 		HAL_Delay(200);
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
-
-		if (Get_SystemTime()+120 >= current_request.start_time) {
+		if (Get_SystemTime()+120 >= current_request.start_time && current_request.type != UNKNOWN) {
 			scheduler_wakeup();
 		} else {
 			scheduler_enter_sleep();
@@ -99,6 +120,9 @@ void scheduler_update() {
 
 	if (sleep_timer == 1) {
 		sleep_timer = 0;
+		i2c_queue_save();
+		request_queue_save();
+		scheduler_save_state();
 		HAL_SuspendTick();
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, 1);
 		HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
@@ -118,7 +142,6 @@ void scheduler_update() {
 void scheduler_finish_measurement() {
 	status = IDLE;
 	interrupt_counter = 0;
-	scheduler_enter_sleep();
 	current_request.ID = 0;
 	current_request.type = UNKNOWN;
 	current_request.is_okay = false;
@@ -130,6 +153,8 @@ void scheduler_finish_measurement() {
 	current_request.max_voltage = 0;
 	current_request.resolution = 0;
 	current_request.samples = 0;
+	i2c_queue_save();
+	scheduler_enter_sleep();
 }
 
 
@@ -161,6 +186,7 @@ void scheduler_add_request(uint8_t id, uint32_t start_time, uint8_t config) {
 			current_start += (uint16_t)breaktime;
 		}
 	}
+	request_queue_save();
 }
 
 void scheduler_request_selftest(uint8_t id, uint32_t start_time, uint8_t priority) {
