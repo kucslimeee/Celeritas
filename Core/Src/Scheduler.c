@@ -25,6 +25,7 @@ uint16_t duration;
 volatile uint8_t interrupt_counter;
 volatile uint8_t sleep_timer;
 bool command_complete = false;
+bool restart_flag = false;
 volatile RunningState status = IDLE;
 
 // PRIVATE API
@@ -61,6 +62,9 @@ void scheduler_on_command() {
 	command_complete = true;
 }
 
+void scheduler_restart() {
+	restart_flag = true;
+}
 
 void scheduler_on_even_second() {
 	if(current_request.type == MAX_TIME && status == RUNNING) {
@@ -102,12 +106,15 @@ void scheduler_update() {
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1);
 		HAL_Delay(200);
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
-		i2c_queue_save();
-		request_queue_save();
-		scheduler_save_state();
+		if (!restart_flag) {
+			i2c_queue_save();
+			request_queue_save();
+			scheduler_save_state();
+		}
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1);
 		HAL_Delay(200);
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
+
 		if (Get_SystemTime()+120 >= current_request.start_time && current_request.type != UNKNOWN) {
 			scheduler_wakeup();
 		} else {
@@ -126,6 +133,11 @@ void scheduler_update() {
 		HAL_SuspendTick();
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, 1);
 		HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
+	}
+
+	if(restart_flag) {
+		restart_flag = false;
+		HAL_NVIC_SystemReset();
 	}
 
 	if(status != STARTING) return;

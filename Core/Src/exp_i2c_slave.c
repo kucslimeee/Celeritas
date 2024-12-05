@@ -171,24 +171,15 @@ void process_Command()
 		case 0x06:
 			reSelftest(command_id, command_dec);
 			break;
-		case '0x0F':
-			//ABReset();
+		case 0x0F:
+			flash_reset();
+			scheduler_restart();
 			break;
-		case '0x0E':
-			//Restart();
+		case 0x0E:
+			scheduler_restart();
 			break;
 		case '0x0D':
 			//Delete_all_measurements();
-			break;
-		case '0x0C' :
-			//Delete_measurements(uint8_t * message); //ide jön a teljes üzenet
-			break;
-		case '0x0B':
-			//Delete_all_request();
-			break;
-		case '0x0A':
-			//Delete_requests(uint8_t * message); //ide jön a teljes üzenet
-			break;
 		default:
 			break;
 		}
