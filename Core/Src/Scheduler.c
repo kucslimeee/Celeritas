@@ -86,8 +86,7 @@ void scheduler_update() {
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1);
 		HAL_Delay(200);
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
-
-		if (Get_SystemTime()+120 >= current_request.start_time) {
+		if (Get_SystemTime()+120 >= current_request.start_time && current_request.type != UNKNOWN) {
 			scheduler_wakeup();
 		} else {
 			scheduler_enter_sleep();
@@ -118,7 +117,6 @@ void scheduler_update() {
 void scheduler_finish_measurement() {
 	status = IDLE;
 	interrupt_counter = 0;
-	scheduler_enter_sleep();
 	current_request.ID = 0;
 	current_request.type = UNKNOWN;
 	current_request.is_okay = false;
@@ -130,6 +128,7 @@ void scheduler_finish_measurement() {
 	current_request.max_voltage = 0;
 	current_request.resolution = 0;
 	current_request.samples = 0;
+	scheduler_enter_sleep();
 }
 
 

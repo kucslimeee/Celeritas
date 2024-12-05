@@ -99,11 +99,16 @@ int main(void)
   if(HAL_I2C_EnableListen_IT(&hi2c2) != HAL_OK){
        Error_Handler();
   }
+
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_SET);
   settingStoreInit();
+  request_queue_init();
+  i2c_queue_init();
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_RESET);
-  uint8_t data[] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E};
-  queue_push(data, false, false);
+  uint8_t data[] = {
+		  0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
+		  0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
+  i2c_queue_push(data, false, false);
   scheduler_enter_sleep();
   /* USER CODE END 2 */
 

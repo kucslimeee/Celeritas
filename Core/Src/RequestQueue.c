@@ -6,8 +6,13 @@
  */
 #include "RequestQueue.h"
 #include "Queue.h"
+#define REQUEST_QUEUE_SIZE QUEUE_SIZE
 
 volatile Queue request_queue = { .item_size = sizeof(Request), .head = 0, .tail = 0, .size = 0 };
+
+void request_queue_init() {
+	queue_init(&request_queue);
+}
 
 /** Finds the position to insert the new request based on its start time.
   * Starts at the head and goes until arriving at the tail. If head == tail (size == 0),
@@ -32,9 +37,9 @@ void request_queue_put(Request request){
 
 	uint8_t insert_pos = find_insert_position(request.start_time);
 	for (int i = request_queue.tail; i > insert_pos; i--){
-		memcpy((Request* )request_queue.data+i, (Request* )request_queue.data+(i-1), sizeof(Request));
+		memcpy(request_queue.data+i, request_queue.data+(i-1)*request_queue.item_size, request_queue.item_size);
 	}
-	memcpy((Request* )request_queue.data+insert_pos, &request, sizeof(Request));
+	memcpy((Request* )request_queue.data+insert_pos*request_queue.item_size, &request, request_queue.item_size);
 	request_queue.tail = (request_queue.tail+1) % REQUEST_QUEUE_SIZE;
 	request_queue.size++;
 }
@@ -46,10 +51,9 @@ void request_queue_put(Request request){
   * @return The next request from the queue
   */
 Request request_queue_get(void) {
-	Request request;
-	if(!queue_get(&request_queue, &request))
-		request = (Request){.start_time = 0};
-	return request;
+	Request* request = &empty_request;
+	queue_get(&request_queue, &request);
+	return *request;
 }
 
 /**
@@ -58,7 +62,7 @@ Request request_queue_get(void) {
   */
 void request_queue_delete(uint8_t id){
 	bool condition(void* item){
-		return ((Request* )item)->id == id;
+		return ((Request* )item)->ID == id;
 	}
 
 	queue_delete(&request_queue, condition);

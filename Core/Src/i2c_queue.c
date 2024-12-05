@@ -9,11 +9,15 @@
 #include "Request.h"
 #include "Scheduler.h"
 #include "Queue.h"
- #define ITEM_SIZE 16 // 15 elements + checksum
+#define ITEM_SIZE 16 // 15 elements + checksum
 
 extern volatile uint8_t interrupt_counter;
 
- volatile Queue i2c_queue = {.item_size = ITEM_SIZE, .head = 0, .tail = 0, .size = 0};
+volatile Queue i2c_queue = { .item_size = 16, .head = 0, .tail = 0, .size = 0 };
+
+void i2c_queue_init() {
+	queue_init(&i2c_queue);
+}
 
  void i2c_queue_push(uint8_t* item, bool priority, bool checksum){
  	uint8_t new_item[ITEM_SIZE];
@@ -26,7 +30,7 @@ extern volatile uint8_t interrupt_counter;
  		new_item[ITEM_SIZE-1] = calculate_checksum(item, ITEM_SIZE-1);
  	}
 
- 	if (i2c_queue.size == QUEUE_SIZE){
+ 	if (i2c_queue.size == 256){
  		return; // QUEUE_OVERFLOW_ERROR
  	}
 
@@ -34,7 +38,9 @@ extern volatile uint8_t interrupt_counter;
  }
 
  uint8_t* i2c_queue_get(bool* result){
- 	return queue_get(&i2c_queue, result);
+	 uint8_t* data;
+	 *result = queue_get(&i2c_queue, &data);
+	 return data;
  }
 
  void i2c_queue_clear(void){
@@ -48,7 +54,7 @@ extern volatile uint8_t interrupt_counter;
 	 }
 
 	 result = true;
-	 return i2c_queue.data[i2c_queue.head + idx];
+	 return i2c_queue.data+(i2c_queue.head + idx)*ITEM_SIZE;
  }
 
  uint8_t i2c_queue_count(bool (*filter)(uint8_t* item)) {

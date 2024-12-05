@@ -4,7 +4,7 @@ void queue_init(Queue* queue) {
     queue->data = malloc(QUEUE_SIZE * queue->item_size);
 }
 
-void queue_put(Queue* queue, void* item, bool priority) {
+void queue_push(Queue* queue, void* item, bool priority) {
 
  	if (priority){
  		queue->head = (queue->head - 1 + QUEUE_SIZE) % QUEUE_SIZE;
@@ -16,16 +16,16 @@ void queue_put(Queue* queue, void* item, bool priority) {
  	queue->size++;
 }
 
-bool queue_get(Queue* queue, void* data) {
+bool queue_get(Queue* queue, void** data) {
     if (queue->size == 0){
- 		data = NULL;
+ 		data = 0;
  		return false;
  	}
  	void* item = queue->data+queue->head*queue->item_size;
  	queue->head = (queue->head + 1 + QUEUE_SIZE) % QUEUE_SIZE;
  	queue->size--;
 
- 	data = item;
+ 	*data = item;
  	return true;
 }
 
@@ -42,7 +42,7 @@ bool queue_delete(Queue* queue, bool (*condition)(void* item)) {
 			for (int j = i; j < queue->size-1; j++){
 				uint8_t current = (queue->head+j) % QUEUE_SIZE;
 				uint8_t next = (queue->head+j+1) % QUEUE_SIZE;
-				queue->data+current*queue->item_size = queue->data+next*queue->item_size; // move all requests on down
+				memcpy(queue->data+current*queue->item_size, queue->data+next*queue->item_size, queue->item_size); // move all requests on down
 			}
 			queue->tail = (queue->tail-1+QUEUE_SIZE) % QUEUE_SIZE;
 			queue->size--;
