@@ -66,23 +66,30 @@ void measure(Request request){
 uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage, bool is_okay){
 	uint16_t sum = 0;
 
+	void wait_for_min_threshold(bool okaying) {
+		if(okaying) HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+		uint16_t voltage;
+		do {
+			voltage = analogRead();
+		}while (voltage > min_voltage);
+		if(okaying) HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+	}
+
 	while(1){
 		if(status != RUNNING) {
 			return 0;
 		}
 		sum = analogRead(); //measure ADC
+		if(sum > max_voltage) wait_for_min_threshold(true);
 		if(!(sum > min_voltage && sum < max_voltage)) continue;
 		for(int i = 1; i < samples; i++){
 			sum += analogRead();
 		}
 		break;
 	}
-	if(is_okay) HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
-	uint16_t voltage;
-	do {
-		voltage = analogRead();
-	}while (voltage > min_voltage);
-	if(is_okay) HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+
+	wait_for_min_threshold(is_okay);
+
 	return (uint16_t)(sum/samples);
 }
 
