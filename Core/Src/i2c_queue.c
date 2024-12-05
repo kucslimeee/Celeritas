@@ -9,11 +9,19 @@
 #include "Request.h"
 #include "Scheduler.h"
 #include "Queue.h"
+#include "Flash.h"
 #define ITEM_SIZE 16 // 15 elements + checksum
 
 extern volatile uint8_t interrupt_counter;
 
-volatile Queue i2c_queue = { .item_size = 16, .head = 0, .tail = 0, .size = 0 };
+volatile Queue i2c_queue = {
+		.item_size = 16,
+		.head = 0,
+		.tail = 0,
+		.size = 0,
+		.max_size = 128,
+		.flash_page = I2C_QUEUE_PAGE_1_ADDR,
+};
 
 void i2c_queue_init() {
 	queue_init(&i2c_queue);
@@ -72,6 +80,9 @@ void i2c_queue_init() {
 	 return filtered_count;
  }
 
+ void i2c_queue_save() {
+	 queue_save(&i2c_queue);
+ }
 
 void add_header(Request request, uint16_t duration){
 	 uint8_t headerData[ITEM_SIZE];

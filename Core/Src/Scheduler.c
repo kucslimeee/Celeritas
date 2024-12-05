@@ -33,7 +33,6 @@ void scheduler_enter_sleep() {
 
 void scheduler_wakeup() {
 	HAL_ResumeTick();
-	//HAL_PWR_DisableSleepOnExit ();
 }
 
 void scheduler_on_command() {
@@ -82,7 +81,8 @@ void scheduler_update() {
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1);
 		HAL_Delay(200);
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
-		HAL_Delay(200);
+		i2c_queue_save();
+		request_queue_save();
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1);
 		HAL_Delay(200);
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
@@ -98,6 +98,8 @@ void scheduler_update() {
 
 	if (sleep_timer == 1) {
 		sleep_timer = 0;
+		i2c_queue_save();
+		request_queue_save();
 		HAL_SuspendTick();
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, 1);
 		HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
@@ -128,6 +130,7 @@ void scheduler_finish_measurement() {
 	current_request.max_voltage = 0;
 	current_request.resolution = 0;
 	current_request.samples = 0;
+	i2c_queue_save();
 	scheduler_enter_sleep();
 }
 
@@ -160,6 +163,7 @@ void scheduler_add_request(uint8_t id, uint32_t start_time, uint8_t config) {
 			current_start += (uint16_t)breaktime;
 		}
 	}
+	request_queue_save();
 }
 
 void scheduler_request_selftest(uint8_t id, uint32_t start_time, uint8_t priority) {

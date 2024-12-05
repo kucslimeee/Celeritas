@@ -6,9 +6,17 @@
  */
 #include "RequestQueue.h"
 #include "Queue.h"
+#include "Flash.h"
 #define REQUEST_QUEUE_SIZE QUEUE_SIZE
 
-volatile Queue request_queue = { .item_size = sizeof(Request), .head = 0, .tail = 0, .size = 0 };
+volatile Queue request_queue = {
+		.item_size = sizeof(Request),
+		.head = 0,
+		.tail = 0,
+		.size = 0,
+		.max_size = 100,
+		.flash_page = REQ_QUEUE_PAGE_1_ADDR,
+};
 
 void request_queue_init() {
 	queue_init(&request_queue);
@@ -75,4 +83,8 @@ void request_queue_clear(void){
 	request_queue.head = 0;
 	request_queue.tail = 0;
 	request_queue.size = 0;
+}
+
+void request_queue_save(){
+	queue_save(&request_queue);
 }

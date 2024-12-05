@@ -1,7 +1,25 @@
 #include "Queue.h"
+#include "Flash.h"
+#include <string.h>
 
 void queue_init(Queue* queue) {
-    queue->data = malloc(QUEUE_SIZE * queue->item_size);
+	uint16_t load_lenght = queue->max_size * queue->item_size;
+    queue->data = malloc(load_lenght);
+
+    uint16_t loaded_data[load_lenght];
+    flash_load(queue->flash_page, load_lenght, queue->data);
+    while(1) {
+    	bool is_valid = false;
+    	for(uint16_t i = 0; i < queue->item_size; i++) {
+    		if(*((uint16_t *)queue->data+(queue->tail*queue->item_size)+i) != 0xFFFF) {
+    			is_valid = true;
+    			break;
+    		}
+    	}
+    	if(!is_valid) break;
+    	queue->tail++;
+    }
+    queue->size = queue->tail;
 }
 
 void queue_push(Queue* queue, void* item, bool priority) {
@@ -50,4 +68,15 @@ bool queue_delete(Queue* queue, bool (*condition)(void* item)) {
 		}
 	}
 	return false; // Error: ID not found
+}
+
+void queue_save(Queue* queue) {
+	uint16_t save_lenght = queue->size * queue->item_size;
+	uint16_t save_data [save_lenght];
+	for(uint8_t idx = 0; idx < queue->size; idx++) {
+		memcpy(save_data+queue->item_size*idx,
+				queue->data+(queue->head+idx)*queue->item_size,
+				queue->item_size);
+	}
+	flash_save(queue->flash_page, save_lenght, &save_data);
 }
