@@ -14,7 +14,9 @@
 #include "Measurements.h"
 #include "SettingsStore.h"
 #include <stdbool.h>
+#include <string.h>
 #include "Selftest.h"
+#include "Flash.h"
 
 // PRIVATE GLOBALS
 volatile Request current_request;
@@ -25,7 +27,26 @@ volatile uint8_t sleep_timer;
 bool command_complete = false;
 volatile RunningState status = IDLE;
 
-// METHOD IMPLEMENTATIONS
+// PRIVATE API
+void scheduler_init() {
+	uint16_t loaded_state[24];
+	flash_load(SCHEDULER_ADDR, 24, &loaded_state);
+	if(loaded_state[0] != 0xFFEE) return;
+	Set_SystemTime(loaded_state[1] << 16 | loaded_state[2]);
+	status = (RunningState)loaded_state[3];
+	memcpy(&current_request, loaded_state+4, sizeof(Request));
+	memcpy(&next_request, loaded_state+14, sizeof(Request));
+}
+
+void scheduler_save_state() {
+	uint32_t time = Get_SystemTime();
+	uint16_t state[24] = {0xFFEE, time >> 16, time & 0xFFFF, status};
+	memcpy(state+4, &current_request, sizeof(Request));
+	memcpy(state+14, &next_request, sizeof(Request));
+	flash_save(SCHEDULER_ADDR, 24, &state);
+}
+
+// PUBLIC METHOD IMPLEMENTATIONS
 
 void scheduler_enter_sleep() {
 	sleep_timer = 60;
@@ -83,6 +104,7 @@ void scheduler_update() {
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
 		i2c_queue_save();
 		request_queue_save();
+		scheduler_save_state();
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1);
 		HAL_Delay(200);
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
@@ -100,6 +122,7 @@ void scheduler_update() {
 		sleep_timer = 0;
 		i2c_queue_save();
 		request_queue_save();
+		scheduler_save_state();
 		HAL_SuspendTick();
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, 1);
 		HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
