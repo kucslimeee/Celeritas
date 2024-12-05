@@ -64,6 +64,7 @@ void scheduler_on_command() {
 
 void scheduler_restart() {
 	restart_flag = true;
+	status = FINISHED;
 }
 
 void scheduler_on_even_second() {
