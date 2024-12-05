@@ -71,7 +71,7 @@ uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage,
 		uint16_t voltage;
 		do {
 			voltage = analogRead();
-		}while (voltage > min_voltage);
+		}while (voltage > min_voltage && status == RUNNING);
 		if(okaying) HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
 	}
 

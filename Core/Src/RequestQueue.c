@@ -47,7 +47,7 @@ void request_queue_put(Request request){
 	for (int i = request_queue.tail; i > insert_pos; i--){
 		memcpy(request_queue.data+i, request_queue.data+(i-1)*request_queue.item_size, request_queue.item_size);
 	}
-	memcpy((Request* )request_queue.data+insert_pos*request_queue.item_size, &request, request_queue.item_size);
+	memcpy(request_queue.data+insert_pos*request_queue.item_size, &request, request_queue.item_size);
 	request_queue.tail = (request_queue.tail+1) % REQUEST_QUEUE_SIZE;
 	request_queue.size++;
 }
