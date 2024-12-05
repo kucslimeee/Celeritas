@@ -33,7 +33,7 @@ void measure(Request request){
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 1);
 
-	HAL_Delay(100);
+	HAL_Delay(1000);
 	while(peaks < request.limit){
 		uint16_t sample = sample_adc(request.samples, request.min_voltage, request.max_voltage, request.is_okay);
 		if(!sample) break;
@@ -77,14 +77,12 @@ uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage,
 		}
 		break;
 	}
-	if(is_okay) {
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
-		uint16_t voltage;
-		do {
-			voltage = analogRead();
-		}while (voltage > min_voltage);
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
-	}
+	if(is_okay) HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+	uint16_t voltage;
+	do {
+		voltage = analogRead();
+	}while (voltage > min_voltage);
+	if(is_okay) HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
 	return (uint16_t)(sum/samples);
 }
 
