@@ -113,23 +113,47 @@ void add_header(Request request, uint16_t duration){
  }
 
 
- void add_spectrum(Request request, uint8_t* spectrum, uint8_t resolution){
+ void add_spectrum(Request request, void* spectrum, uint8_t resolution){
 	 const uint8_t everyBit = 16*8; //120, we can modify to 128 and it should work
 	 uint8_t importantBits = everyBit/resolution; // how many bits do we keep in
 
 	 uint8_t bitArr[everyBit]; //120 byte
 	 uint8_t data[ITEM_SIZE] = {0x00};
+
+	 bool spec_ops(int i) {
+		 bool is_even = false;
+		 switch(resolution) {
+		 case 2:
+			 is_even = *(((uint64_t *)spectrum)+i) % 2 == 0;
+			 if(is_even) *(((uint64_t *)spectrum)+i) /= 2;
+			 else *(((uint64_t *)spectrum)+i) = (*(((uint64_t *)spectrum)+i)-1)/2;
+			 break;
+		 case 4:
+			 is_even = *(((uint32_t *)spectrum)+i) % 2 == 0;
+			 if(is_even) *(((uint32_t *)spectrum)+i) /= 2;
+			 else *(((uint32_t *)spectrum)+i) = (*(((uint32_t *)spectrum)+i)-1)/2;
+			 break;
+		 case 8:
+			 is_even = *(((uint16_t *)spectrum)+i) % 2 == 0;
+			 if(is_even) *(((uint16_t *)spectrum)+i) /= 2;
+			 else *(((uint16_t *)spectrum)+i) = (*(((uint16_t *)spectrum)+i)-1)/2;
+			 break;
+		 default:
+			 // 16 or more
+			 is_even = *(((uint8_t *)spectrum)+i) % 2 == 0;
+			 if(is_even) *(((uint8_t *)spectrum)+i) /= 2;
+			 else *(((uint8_t *)spectrum)+i) = (*(((uint8_t *)spectrum)+i)-1)/2;
+			 break;
+		 }
+		 return is_even;
+	 }
+
 	 for(int i = 0; i < resolution; i++){
 		 for(int j = 0; j < importantBits; j++){
 			 // Converting to base 2
-			 if(spectrum[i] % 2 == 0){
-				 spectrum[i] /= 2;
-				 bitArr[(i+1)*importantBits-j-1] = 0;
-			 }
-			 else{
-				 spectrum[i] = (spectrum[i]-1)/2;
-				 bitArr[(i+1)*importantBits-j-1] = 1;
-			 }
+			 bool is_even = spec_ops(i);
+			 if(is_even) bitArr[(i+1)*importantBits-j-1] = 0;
+			 else bitArr[(i+1)*importantBits-j-1] = 1;
 		 }
 	 }
 

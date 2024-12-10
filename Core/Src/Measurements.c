@@ -22,8 +22,9 @@ uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage,
 
 void measure(Request request){
 	uint8_t resolution = request.resolution;
-	uint8_t measurementData[resolution];
-	for(int i = 0; i < resolution; i++) measurementData[i] = 0x00;
+	void* measurementData = malloc(16);
+	memset(measurementData, 0, 16);
+	//for(int i = 0; i < resolution; i++) measurementData[i] = 0x00;
 	uint8_t intervalLength = (request.max_voltage - request.min_voltage)/resolution;
 	uint8_t intervalSize = 4080 / resolution; // the maximum number of peaks that a category can store. 4080 = 255 * 16
 	uint8_t peaks = 0;
@@ -33,13 +34,30 @@ void measure(Request request){
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 1);
 
+	void incrementCategory(uint8_t interval) {
+		switch(resolution) {
+		case 2:
+			if(*(((uint64_t *)measurementData)+interval) < intervalSize) *(((uint64_t *)measurementData)+interval) += 1;
+			break;
+		case 4:
+			if(*(((uint32_t *)measurementData)+interval) < intervalSize) *(((uint32_t *)measurementData)+interval) += 1;
+			break;
+		case 8:
+			if(*(((uint16_t *)measurementData)+interval) < intervalSize) *(((uint16_t *)measurementData)+interval) += 1;
+			break;
+		default:
+			if(*(((uint8_t *)measurementData)+interval) < intervalSize) *(((uint8_t *)measurementData)+interval) += 1;
+			break;
+		}
+	}
+
 	HAL_Delay(1000);
 	while(peaks < request.limit){
 		uint16_t sample = sample_adc(request.samples, request.min_voltage, request.max_voltage, request.is_okay);
 		if(!sample) break;
 		uint8_t intervalIndex = abs(sample - request.min_voltage)/intervalLength;
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, peaks % 2);
-		if(measurementData[intervalIndex] < intervalSize) measurementData[intervalIndex]++;
+		incrementCategory(intervalIndex);
 		if(request.type == MAX_HITS) peaks++;
 	}
 
@@ -48,14 +66,14 @@ void measure(Request request){
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 0);
 	if(request.is_header){
 		if(request.is_priority){
-			add_spectrum(request, &measurementData, resolution);
+			add_spectrum(request, measurementData, resolution);
 			add_header(request, request.limit);
 		} else {
 			add_header(request, request.limit);
-			add_spectrum(request, &measurementData, resolution);
+			add_spectrum(request, measurementData, resolution);
 			}
 	}else {
-		add_spectrum(request, &measurementData, resolution);
+		add_spectrum(request, measurementData, resolution);
 	}
 	scheduler_finish_measurement();
 }
