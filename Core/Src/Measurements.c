@@ -27,7 +27,7 @@ void measure(Request request){
 	//for(int i = 0; i < resolution; i++) measurementData[i] = 0x00;
 	uint8_t intervalLength = (request.max_voltage - request.min_voltage)/resolution;
 	uint8_t intervalSize = 4080 / resolution; // the maximum number of peaks that a category can store. 4080 = 255 * 16
-	uint8_t peaks = 0;
+	uint16_t peaks = 0;
 
 	select_measurement_channel();
 	HAL_ADC_Start(&hadc1);
@@ -63,6 +63,7 @@ void measure(Request request){
 
 	HAL_ADC_Stop(&hadc1);
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
+	HAL_Delay(1000);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 0);
 	if(request.is_header){
 		if(request.is_priority){
