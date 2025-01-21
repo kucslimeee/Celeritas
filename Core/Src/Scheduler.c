@@ -207,7 +207,8 @@ void scheduler_request_selftest(uint8_t id, uint32_t start_time, uint8_t priorit
 	new_request.ID =  id;
 	new_request.type = SELFTEST;
 	new_request.is_priority = priority & 0x80;
-	new_request.start_time = start_time;
+	bool instant_measurement = start_time == 0xffffffff;
+	new_request.start_time = (instant_measurement) ? Get_SystemTime() + 2 : start_time;
 	request_queue_put(new_request);
 }
 

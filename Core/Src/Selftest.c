@@ -40,14 +40,17 @@ void selftest(Request request) {
 	uint8_t request_2 = scheduler_get_request_id(1);
 
 	select_measurement_channel();
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 1);
 	HAL_ADC_Start(&hadc1);
+	HAL_Delay(1000);
 	uint32_t sum = 0;
-	for (int i = 0; i < 1000; i++) {
+	for (int i = 0; i < 10; i++) {
 		sum += analogRead();
 		HAL_Delay(1);
 	}
-	uint16_t test_measurement = sum / 1000;
+	uint16_t test_measurement = sum / 10;
 	HAL_ADC_Stop(&hadc1);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 0);
 
 	uint8_t packet_data[15] = {
 		request.ID,
@@ -66,7 +69,7 @@ void selftest(Request request) {
 		(uint8_t)((test_measurement >> 8) & 0xFF),
 		0xFE
 	};
-	queue_push(&packet_data, request.is_priority, true);
+	i2c_queue_push(&packet_data, request.is_priority, true);
 	scheduler_finish_measurement();
 }
 
