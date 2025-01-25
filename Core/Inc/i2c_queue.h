@@ -27,6 +27,6 @@ void i2c_queue_save();
 
 void add_header(Request request, uint16_t duration);
 void add_spectrum(Request request, void* spectrum, uint8_t resolution);
-void add_error(Request request, uint8_t error_type);
+void add_error(uint8_t request_id, uint8_t error_type);
 
 #endif /* INC_I2C_QUEUE_H_ */

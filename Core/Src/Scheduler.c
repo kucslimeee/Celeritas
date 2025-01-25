@@ -88,7 +88,7 @@ void scheduler_on_even_second() {
 		next_request = request_queue_get();
 		if(next_request.start_time > 0) {
 			if (time > next_request.start_time) {
-				add_error(next_request, TIMEOUT);
+				add_error(next_request.ID, TIMEOUT);
 				i = 0; // try 10 more times
 			} else break;
 		}

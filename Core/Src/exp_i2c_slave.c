@@ -178,15 +178,13 @@ void process_Command()
 		case 0x0E:
 			scheduler_restart();
 			break;
-		case '0x0D':
-			//Delete_all_measurements();
 		default:
-			break;
+			add_error(command_id, CORRUPTED);
+			return;
 		}
 		scheduler_on_command();
 	}
 	else{
-		//invalid command error
+		add_error(0, CORRUPTED);
 	}
-
 }

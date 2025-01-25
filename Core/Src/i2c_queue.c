@@ -167,8 +167,9 @@ void add_header(Request request, uint16_t duration){
 	 i2c_queue_push(&data, false);
 }
 
- void add_error(Request request, uint8_t error_type){
+ void add_error(uint8_t request_id, uint8_t error_type){
 	 uint8_t errorData[15] = {0};
+	 errorData[0] = request_id;
 	 errorData[14] = 0xD5;
 	 if(error_type == TIMEOUT){
 		 errorData[13] = 0xFD;
