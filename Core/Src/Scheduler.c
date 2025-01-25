@@ -98,6 +98,7 @@ void scheduler_on_even_second() {
 void scheduler_on_i2c_communication() {
 	scheduler_wakeup();
 	if(status != RUNNING) return;
+	add_error(current_request.ID, INTERRUPT);
 	if(interrupt_counter+1 <= 0xFF) interrupt_counter++;
 }
 
