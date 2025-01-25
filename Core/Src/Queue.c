@@ -22,15 +22,10 @@ void queue_init(Queue* queue) {
     queue->size = queue->tail;
 }
 
-void queue_push(Queue* queue, void* item, bool priority) {
+void queue_push(Queue* queue, void* item) {
 
- 	if (priority){
- 		queue->head = (queue->head - 1 + QUEUE_SIZE) % QUEUE_SIZE;
- 		memcpy(queue->data + queue->head * queue->item_size, item, queue->item_size);
- 	} else {
- 		memcpy(queue->data + queue->tail * queue->item_size, item, queue->item_size);
- 		queue->tail = (queue->tail + 1 + QUEUE_SIZE) % QUEUE_SIZE;
- 	}
+	memcpy(queue->data + queue->tail * queue->item_size, item, queue->item_size);
+	queue->tail = (queue->tail + 1 + QUEUE_SIZE) % QUEUE_SIZE;
  	queue->size++;
 }
 

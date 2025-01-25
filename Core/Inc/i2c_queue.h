@@ -19,7 +19,7 @@
 #define CORRUPTED 0xF7
 
 void i2c_queue_init();
-void i2c_queue_push(uint8_t* item, bool priority, bool checksum);
+void i2c_queue_push(uint8_t* item, bool checksum);
 uint8_t* i2c_queue_get(bool* result);
 uint8_t i2c_queue_count(bool (*filter)(uint8_t* item));
 uint8_t* i2c_queue_fetch(uint8_t idx, bool *result);

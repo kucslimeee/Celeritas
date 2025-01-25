@@ -155,17 +155,7 @@ void scheduler_update() {
 void scheduler_finish_measurement() {
 	status = IDLE;
 	interrupt_counter = 0;
-	current_request.ID = 0;
-	current_request.type = UNKNOWN;
-	current_request.is_okay = false;
-	current_request.is_priority = false;
-	current_request.is_header = false;
-	current_request.limit = 0;
-	current_request.start_time = 0;
-	current_request.min_voltage = 0;
-	current_request.max_voltage = 0;
-	current_request.resolution = 0;
-	current_request.samples = 0;
+	current_request = empty_request;
 	i2c_queue_save();
 	scheduler_enter_sleep();
 }
@@ -177,7 +167,6 @@ void scheduler_add_request(uint8_t id, uint32_t start_time, uint8_t config) {
 	new_request.ID = id;
     new_request.type = getSetting(MODE_OF_OPERATION);
     new_request.is_okay = getSetting(IS_OKAY);
-    new_request.is_priority = config & 0x80; // the first bit of byte 5
     new_request.is_header = config & 0x40; // the second bit of byte 5
 	new_request.limit = getSetting(DURATION);
 	new_request.start_time = (instant_measurement) ? Get_SystemTime() + 2 : start_time;
@@ -206,7 +195,6 @@ void scheduler_request_selftest(uint8_t id, uint32_t start_time, uint8_t priorit
 	Request new_request;
 	new_request.ID =  id;
 	new_request.type = SELFTEST;
-	new_request.is_priority = priority & 0x80;
 	bool instant_measurement = start_time == 0xffffffff;
 	new_request.start_time = (instant_measurement) ? Get_SystemTime() + 2 : start_time;
 	request_queue_put(new_request);

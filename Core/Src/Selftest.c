@@ -69,7 +69,7 @@ void selftest(Request request) {
 		(uint8_t)((test_measurement >> 8) & 0xFF),
 		0xFE
 	};
-	i2c_queue_push(&packet_data, request.is_priority, true);
+	i2c_queue_push(&packet_data, true);
 	scheduler_finish_measurement();
 }
 

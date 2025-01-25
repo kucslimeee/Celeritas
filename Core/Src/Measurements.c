@@ -66,13 +66,8 @@ void measure(Request request){
 	HAL_Delay(1000);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 0);
 	if(request.is_header){
-		if(request.is_priority){
-			add_spectrum(request, measurementData, resolution);
-			add_header(request, request.limit);
-		} else {
-			add_header(request, request.limit);
-			add_spectrum(request, measurementData, resolution);
-			}
+		add_header(request, request.limit);
+		add_spectrum(request, measurementData, resolution);
 	}else {
 		add_spectrum(request, measurementData, resolution);
 	}

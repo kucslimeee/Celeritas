@@ -27,7 +27,7 @@ void i2c_queue_init() {
 	queue_init(&i2c_queue);
 }
 
- void i2c_queue_push(uint8_t* item, bool priority, bool checksum){
+ void i2c_queue_push(uint8_t* item, bool checksum){
  	uint8_t new_item[ITEM_SIZE];
  	uint8_t copy_lenght = (checksum) ? ITEM_SIZE - 1 : ITEM_SIZE;
  	for (uint8_t i = 0; i < copy_lenght; i++){
@@ -42,7 +42,7 @@ void i2c_queue_init() {
  		return; // QUEUE_OVERFLOW_ERROR
  	}
 
- 	queue_push(&i2c_queue, new_item, priority);
+ 	queue_push(&i2c_queue, new_item);
  }
 
  uint8_t* i2c_queue_get(bool* result){
@@ -108,7 +108,7 @@ void add_header(Request request, uint16_t duration){
 	 headerData[13] = 0;
 	 headerData[14] = 0;
 	 headerData[15] = 0xFF;
-	 i2c_queue_push(headerData, request.is_priority, true);
+	 i2c_queue_push(headerData, true);
 
  }
 
@@ -164,10 +164,7 @@ void add_header(Request request, uint16_t duration){
 			 }
 		 }
 	 }
-	 i2c_queue_push(&data, request.is_priority, false);
-
-
-
+	 i2c_queue_push(&data, false);
 }
 
  void add_error(Request request, uint8_t error_type){
@@ -182,5 +179,5 @@ void add_header(Request request, uint16_t duration){
 	 if(error_type == CORRUPTED){
 	 	errorData[13] = 0xF7;
 	 }
-	 i2c_queue_push(errorData, request.is_priority, true);
+	 i2c_queue_push(errorData, true);
  }

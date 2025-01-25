@@ -23,7 +23,7 @@ typedef struct {
 } Queue;
 
 void queue_init(Queue* queue);
-void queue_push(Queue* queue, void* item, bool priority);
+void queue_push(Queue* queue, void* item);
 bool queue_get(Queue* queue, void** data);
 void queue_clear(Queue* queue);
 bool queue_delete(Queue* queue, bool (*condition)(void* item));
