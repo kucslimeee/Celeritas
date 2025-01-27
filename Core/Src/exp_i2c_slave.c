@@ -33,7 +33,7 @@ extern ADC_HandleTypeDef hadc1;
 #define TxSIZE 16
 static uint8_t RxData[RxSIZE];
 static uint8_t TxData[TxSIZE] = {0x00};
-static uint8_t TX_TEMPLATE[TxSIZE] = {0xFF};
+static uint8_t TX_TEMPLATE[TxSIZE] = {0x00};
 
 uint8_t rxcount;
 uint8_t txcount;
@@ -66,10 +66,8 @@ extern void HAL_I2C_AddrCallback(I2C_HandleTypeDef *hi2c, uint8_t TransferDirect
 		bool result;
 		uint8_t* packet = i2c_queue_get(&result);
 		if(!result) packet = TX_TEMPLATE;
-		else {
-			for(int i = 0; i < TxSIZE; i++) {
-				TxData[i] = packet[i];
-			}
+		for(int i = 0; i < TxSIZE; i++) {
+			TxData[i] = packet[i];
 		}
 		HAL_I2C_Slave_Seq_Transmit_IT(hi2c, TxData+txcount, 1, I2C_FIRST_FRAME);
 	}

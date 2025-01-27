@@ -13,20 +13,18 @@
 #include "Scheduler.h"
 #include <stdbool.h>
 #include <stdlib.h>
+#include <math.h>
 
 extern ADC_HandleTypeDef hadc1;
 extern volatile RunningState status;
 
 uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage, bool is_okay);
 
-
 void measure(Request request){
 	uint8_t resolution = request.resolution;
 	void* measurementData = malloc(16);
 	memset(measurementData, 0, 16);
-	//for(int i = 0; i < resolution; i++) measurementData[i] = 0x00;
-	uint8_t intervalLength = (request.max_voltage - request.min_voltage)/resolution;
-	uint8_t intervalSize = 4080 / resolution; // the maximum number of peaks that a category can store. 4080 = 255 * 16
+	uint16_t intervalLength = (request.max_voltage - request.min_voltage)/resolution;
 	uint16_t peaks = 0;
 
 	select_measurement_channel();
@@ -35,18 +33,42 @@ void measure(Request request){
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 1);
 
 	void incrementCategory(uint8_t interval) {
+		#define INCREMENT(TYPE, SIZE)	\
+		({						\
+			if(*((TYPE*)measurementData+interval) < (SIZE)) { \
+				*((TYPE*)measurementData+interval) += 1; \
+			} \
+		})
+
 		switch(resolution) {
 		case 2:
-			if(*(((uint64_t *)measurementData)+interval) < intervalSize) *(((uint64_t *)measurementData)+interval) += 1;
+			INCREMENT(uint64_t, UINT64_MAX);
 			break;
 		case 4:
-			if(*(((uint32_t *)measurementData)+interval) < intervalSize) *(((uint32_t *)measurementData)+interval) += 1;
+			INCREMENT(uint32_t, UINT32_MAX);
 			break;
 		case 8:
-			if(*(((uint16_t *)measurementData)+interval) < intervalSize) *(((uint16_t *)measurementData)+interval) += 1;
+			INCREMENT(uint16_t, UINT16_MAX);
+			break;
+		case 16:
+			INCREMENT(uint8_t, UINT8_MAX);
+			break;
+		case 32:
+		case 64:
+		case 128:
+			uint8_t intervalsPerByte = resolution / 16; // how many intervals are in a single byte
+			uint8_t intervalSize = 8 / intervalsPerByte; // measured in bits
+			uint8_t byteIndex = interval / intervalsPerByte;
+			uint8_t intervalByte = *((uint8_t*)measurementData+byteIndex);
+			uint8_t intervalLimit = 512 / resolution; // the max value of the interval
+			uint8_t intervalIdx = interval - (byteIndex * intervalsPerByte); // the index of interval inside of a byte
+			uint8_t intervalMask = (0xFF >> (8 - intervalSize));
+			uint8_t intervalValue = (intervalByte >> (8 - (intervalIdx * intervalsPerByte))) & intervalMask;
+			if((intervalValue + 1) < intervalLimit)
+				intervalByte += pow(2, (intervalSize * (intervalsPerByte - (intervalIdx + 1))));
+			*((uint8_t*)measurementData+byteIndex) = intervalByte;
 			break;
 		default:
-			if(*(((uint8_t *)measurementData)+interval) < intervalSize) *(((uint8_t *)measurementData)+interval) += 1;
 			break;
 		}
 	}
