@@ -26,6 +26,7 @@ void measure(Request request){
 	memset(measurementData, 0, 16);
 	uint16_t intervalLength = (request.max_voltage - request.min_voltage)/resolution;
 	uint16_t peaks = 0;
+	bool running = true;
 
 	select_measurement_channel();
 	HAL_ADC_Start(&hadc1);
@@ -38,6 +39,9 @@ void measure(Request request){
 			if(*((TYPE*)measurementData+interval) < (SIZE)) { \
 				*((TYPE*)measurementData+interval) += 1; \
 			} \
+			else if (!request.continue_with_full_channel) { \
+				running = false; \
+			}\
 		})
 
 		switch(resolution) {
@@ -66,6 +70,8 @@ void measure(Request request){
 			uint8_t intervalValue = (intervalByte >> ((intervalsPerByte - (intervalIdx + 1)) * intervalSize)) & intervalMask;
 			if((intervalValue + 1) < intervalLimit)
 				intervalByte += pow(2, (intervalSize * (intervalsPerByte - (intervalIdx + 1))));
+			else if (!request.continue_with_full_channel)
+				running = false;
 			*((uint8_t*)measurementData+byteIndex) = intervalByte;
 			break;
 		default:
@@ -74,13 +80,16 @@ void measure(Request request){
 	}
 
 	HAL_Delay(1000);
-	while(peaks < request.limit){
+	while(running){
 		uint16_t sample = sample_adc(request.samples, request.min_voltage, request.max_voltage, request.is_okay);
 		if(!sample) break;
 		uint8_t intervalIndex = abs(sample - request.min_voltage)/intervalLength;
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, peaks % 2);
 		incrementCategory(intervalIndex);
-		if(request.type == MAX_HITS) peaks++;
+		if(request.type == MAX_HITS) {
+			peaks++;
+			if(peaks == request.limit) running = false;
+		}
 	}
 
 	HAL_ADC_Stop(&hadc1);

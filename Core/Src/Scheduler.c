@@ -169,6 +169,7 @@ void scheduler_add_request(uint8_t id, uint32_t start_time, uint8_t config) {
     new_request.type = getSetting(MODE_OF_OPERATION);
     new_request.is_okay = getSetting(IS_OKAY);
     new_request.is_header = config & 0x40; // the second bit of byte 5
+    new_request.continue_with_full_channel = config & 0x80;
 	new_request.limit = getSetting(DURATION);
 	new_request.start_time = (instant_measurement) ? Get_SystemTime() + 2 : start_time;
 	new_request.min_voltage = getSetting(MIN_VOLTAGE);

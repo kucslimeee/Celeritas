@@ -23,6 +23,7 @@ typedef struct {
 	RequestType type;
 	bool is_okay;
 	bool is_header;
+	bool continue_with_full_channel;
 	uint16_t limit;
 	uint32_t start_time;
 	uint16_t min_voltage;
@@ -35,6 +36,7 @@ static Request empty_request = {
 	    .ID = 0,
 	    .type = 0,          // Assuming RequestType is an enum or similar, set to its default value
 	    .is_okay = false,
+		.continue_with_full_channel = false,
 	    .is_header = false,
 	    .limit = 0,
 	    .start_time = 0,
