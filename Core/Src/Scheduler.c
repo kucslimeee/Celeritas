@@ -78,12 +78,15 @@ void scheduler_on_even_second() {
 	}
 
 	if(status != IDLE) return;
-	if(next_request.start_time > 0) {
+	uint32_t time = Get_SystemTime();
+
+	if(next_request.start_time > time) {
 		current_request = next_request;
 		status = STARTING;
+	} else if (next_request.start_time > 0) {
+		add_error(next_request.ID, TIMEOUT);
 	}
 
-	uint32_t time = Get_SystemTime();
 	for(int i = 0; i < 10; i++) {
 		next_request = request_queue_get();
 		if(next_request.start_time > 0) {
@@ -92,6 +95,10 @@ void scheduler_on_even_second() {
 				i = 0; // try 10 more times
 			} else break;
 		}
+	}
+
+	if (next_request.type != MAX_HITS && next_request.type != MAX_TIME) {
+		next_request = empty_request;
 	}
 }
 
@@ -177,7 +184,7 @@ void scheduler_add_request(uint8_t id, uint32_t start_time, uint8_t config) {
 	new_request.samples = getSetting(SAMPLES);
 	new_request.resolution = getSetting(RESOLUTION);
 
-	uint16_t repetitions = (instant_measurement) ? 0 : getSetting(REPETITIONS);
+	uint16_t repetitions = getSetting(REPETITIONS);
 	if(repetitions == 0) {
 		request_queue_put(new_request);
 	} else {
