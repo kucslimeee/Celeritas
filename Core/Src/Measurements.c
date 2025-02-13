@@ -63,7 +63,7 @@ void measure(Request request){
 			uint8_t intervalLimit = 512 / resolution; // the max value of the interval
 			uint8_t intervalIdx = interval - (byteIndex * intervalsPerByte); // the index of interval inside of a byte
 			uint8_t intervalMask = (0xFF >> (8 - intervalSize));
-			uint8_t intervalValue = (intervalByte >> (8 - (intervalIdx * intervalsPerByte))) & intervalMask;
+			uint8_t intervalValue = (intervalByte >> ((intervalsPerByte - (intervalIdx + 1)) * intervalSize)) & intervalMask;
 			if((intervalValue + 1) < intervalLimit)
 				intervalByte += pow(2, (intervalSize * (intervalsPerByte - (intervalIdx + 1))));
 			*((uint8_t*)measurementData+byteIndex) = intervalByte;
