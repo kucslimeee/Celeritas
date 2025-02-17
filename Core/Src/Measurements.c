@@ -86,8 +86,8 @@ void measure(Request request){
 		uint8_t intervalIndex = abs(sample - request.min_voltage)/intervalLength;
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, peaks % 2);
 		incrementCategory(intervalIndex);
+		peaks++;
 		if(request.type == MAX_HITS) {
-			peaks++;
 			if(peaks == request.limit) running = false;
 		}
 	}
