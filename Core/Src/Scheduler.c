@@ -50,7 +50,7 @@ void scheduler_save_state() {
 // PUBLIC METHOD IMPLEMENTATIONS
 
 void scheduler_enter_sleep() {
-	sleep_timer = 60;
+	sleep_timer = 600;
 }
 
 void scheduler_wakeup() {
