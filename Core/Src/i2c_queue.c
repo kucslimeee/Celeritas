@@ -10,6 +10,8 @@
 #include "Scheduler.h"
 #include "Queue.h"
 #include "Flash.h"
+#include "Timer.h"
+
 #define ITEM_SIZE 16 // 15 elements + checksum
 
 extern volatile uint8_t interrupt_counter;
@@ -94,7 +96,7 @@ void add_header(Request request, uint16_t duration){
 	 headerData[2] = temp >> 8;
 	 headerData[3] = temp & 0xFF;
 
-	 uint32_t localTime = request.start_time;
+	 uint32_t localTime = Get_SystemTime();
 	 for(int i = 0; i < 4; i++){
 		 headerData[4+i] = (uint8_t)(localTime >> 24-i*8);
 		 localTime -= (headerData[i] << 24-i*8);
@@ -106,8 +108,7 @@ void add_header(Request request, uint16_t duration){
 	 headerData[11] = request.max_voltage & 0xFF;
 	 headerData[12] = 0;
 	 headerData[13] = 0;
-	 headerData[14] = 0;
-	 headerData[15] = 0xFF;
+	 headerData[14] = 0xFF;
 	 i2c_queue_push(headerData, true);
 
  }
