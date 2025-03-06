@@ -16,6 +16,8 @@ volatile uint16_t counter = 0;
  */
 void Systick_Interrupt(){
 	counter++;
+	// This must run in every tent of a second, otherwise we would check only the
+	// cases when our LED is turned on.
 	if (counter % 100 == 0) {
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, counter % 200 == 0);
 	}

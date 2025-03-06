@@ -8,7 +8,7 @@
 #include "Flash.h"
 #include "main.h"
 
-void flash_load(uint32_t address, uint16_t length, uint16_t* data) {
+void flash_load(uint32_t* address, uint16_t length, uint16_t* data) {
 	for (uint16_t i = 0; i < length; i++) {
 	    data[i] = *(__IO uint16_t *)address;
 	    address += 2;

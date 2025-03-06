@@ -73,8 +73,8 @@ void scheduler_on_even_second() {
 		if (duration == 0) status = FINISHED;
 	}
 
-	if (sleep_timer > 0) {
-		if (sleep_timer-1 > 0) sleep_timer--;
+	if (sleep_timer-1 > 0) {
+		sleep_timer--;
 	}
 
 	if(status != IDLE) return;

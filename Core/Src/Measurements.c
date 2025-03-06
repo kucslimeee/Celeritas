@@ -22,8 +22,7 @@ uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage,
 
 void measure(Request request){
 	uint8_t resolution = request.resolution;
-	void* measurementData = malloc(16);
-	memset(measurementData, 0, 16);
+	uint8_t* measurementData[16] = {};
 	uint16_t intervalLength = (request.max_voltage - request.min_voltage)/resolution;
 	uint16_t peaks = 0;
 	bool running = true;

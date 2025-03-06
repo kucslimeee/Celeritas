@@ -4,10 +4,11 @@
 
 void queue_init(Queue* queue) {
 	uint16_t load_lenght = queue->max_size * queue->item_size;
-    queue->data = malloc(load_lenght);
+    uint8_t data[load_lenght];
+    queue->data = (void*)data;
 
     uint16_t loaded_data[load_lenght];
-    flash_load(queue->flash_page, load_lenght, queue->data);
+    flash_load(queue->flash_page, load_lenght/2, queue->data);
     while(1) {
     	bool is_valid = false;
     	for(uint16_t i = 0; i < queue->item_size; i++) {

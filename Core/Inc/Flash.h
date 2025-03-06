@@ -35,7 +35,7 @@
 
 
 #include <stdint.h>
-void flash_load(uint32_t address, uint16_t length, uint16_t* data);
+void flash_load(uint32_t* address, uint16_t length, uint16_t* data);
 void flash_save(uint32_t address, uint16_t length, uint16_t* data);
 void flash_reset();
 
