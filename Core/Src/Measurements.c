@@ -15,12 +15,16 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include "stm32f3xx_ll_adc.h"
+
+
 extern ADC_HandleTypeDef hadc1;
 extern volatile RunningState status;
 
 uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage, bool is_okay);
 
 void measure(Request request){
+
 	uint8_t resolution = request.resolution;
 	uint8_t* measurementData[16] = {};
 	uint16_t intervalLength = (request.max_voltage - request.min_voltage)/resolution;
@@ -28,7 +32,10 @@ void measure(Request request){
 	bool running = true;
 
 	select_measurement_channel();
-	HAL_ADC_Start(&hadc1);
+
+	HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED); 	// ADC auto calibration for single-ended input (has to be called before start)
+	HAL_ADC_Start(&hadc1);									// Start the ADC
+
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 1);
 
@@ -143,11 +150,15 @@ uint16_t analogRead()
 	return HAL_ADC_GetValue(&hadc1); // get the adc value
 }
 
-uint16_t get_temperature() {
+
+int get_temperature() {
 	select_temperature_channel();
 	HAL_ADC_Start(&hadc1);
 	HAL_ADC_PollForConversion(&hadc1, 100);
-	uint16_t adc = HAL_ADC_GetValue(&hadc1);
+	int adc = HAL_ADC_GetValue(&hadc1);
+
+   adc = __LL_ADC_CALC_TEMPERATURE_TYP_PARAMS(4300, 1430, 298, 3300, adc, LL_ADC_RESOLUTION_12B);
+
 	HAL_ADC_Stop(&hadc1);
 	return adc;
 }

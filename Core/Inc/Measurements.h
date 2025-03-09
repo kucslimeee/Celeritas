@@ -13,7 +13,7 @@
 
 void measure(Request request);
 uint16_t analogRead();
-uint16_t get_temperature();
+int get_temperature();
 void select_measure_adc();
 
 
