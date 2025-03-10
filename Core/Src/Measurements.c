@@ -151,14 +151,32 @@ uint16_t analogRead()
 }
 
 
-int get_temperature() {
+int get_temperature() {					//units: K (deg)
 	select_temperature_channel();
 	HAL_ADC_Start(&hadc1);
 	HAL_ADC_PollForConversion(&hadc1, 100);
 	int adc = HAL_ADC_GetValue(&hadc1);
-
-   adc = __LL_ADC_CALC_TEMPERATURE_TYP_PARAMS(4300, 1430, 298, 3300, adc, LL_ADC_RESOLUTION_12B);
-
+	adc = __LL_ADC_CALC_TEMPERATURE_TYP_PARAMS(4300, 1430, 298, 3300, adc, LL_ADC_RESOLUTION_12B);
 	HAL_ADC_Stop(&hadc1);
 	return adc;
 }
+
+int get_refint_voltage() {				//units: mV
+	select_refint_channel();
+	HAL_ADC_Start(&hadc1);
+	HAL_ADC_PollForConversion(&hadc1, 100);
+	int adc1 = HAL_ADC_GetValue(&hadc1);
+	adc1 = __LL_ADC_CALC_VREFANALOG_VOLTAGE(adc1, LL_ADC_RESOLUTION_12B);
+	HAL_ADC_Stop(&hadc1);
+	return adc1;
+}
+
+//vbat channel is not connected?
+/*int get_vbat_voltage() {
+	select_vbat_channel();
+	HAL_ADC_Start(&hadc1);
+	HAL_ADC_PollForConversion(&hadc1, 100);
+	int adc2 = HAL_ADC_GetValue(&hadc1);
+	HAL_ADC_Stop(&hadc1);
+	return adc2;
+}*/
