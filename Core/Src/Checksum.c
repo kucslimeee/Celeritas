@@ -9,8 +9,10 @@
 
  uint8_t calculate_checksum(uint8_t item[], int length) {
      uint8_t checksum = 0;
+     uint16_t sum = 0;
      for (int i = 0; i < length; i++) {
-         checksum += item[i];
+         sum += item[i];
      }
+     checksum = (uint8_t)sum;
      return checksum;
  }
