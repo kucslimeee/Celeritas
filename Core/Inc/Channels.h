@@ -12,6 +12,9 @@
 
 void select_temperature_channel();
 void select_measurement_channel();
+void select_refint_channel();
+void select_vbat_channel();
+
 
 
 #endif /* INC_CHANNELS_H_ */

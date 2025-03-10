@@ -201,10 +201,10 @@ void scheduler_add_request(uint8_t id, uint32_t start_time, uint8_t config) {
 }
 
 void scheduler_request_selftest(uint8_t id, uint32_t start_time, uint8_t priority) {
+	bool instant_measurement = start_time == 0xffffffff;
 	Request new_request;
 	new_request.ID =  id;
 	new_request.type = SELFTEST;
-	bool instant_measurement = start_time == 0xffffffff;
 	new_request.start_time = (instant_measurement) ? Get_SystemTime() + 2 : start_time;
 	request_queue_put(new_request);
 }
