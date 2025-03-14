@@ -10,6 +10,8 @@
 
  #include <stdint.h>
 
+ int power_calc(int base, int exponent);
  uint8_t calculate_checksum(uint8_t item[], int length);
+
 
  #endif /* INC_CHECKSUM_H_ */
