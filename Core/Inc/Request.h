@@ -46,4 +46,6 @@ static Request empty_request = {
 	    .resolution = 0
 	};
 
+bool check_request(Request request, uint32_t time);
+
 #endif /* INC_REQUEST_HANDLER_H_ */

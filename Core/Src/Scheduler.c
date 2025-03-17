@@ -29,14 +29,25 @@ bool restart_flag = false;
 volatile RunningState status = IDLE;
 
 // PRIVATE API
+bool validate_status() {
+	if (status != IDLE && status != STARTING && status != RUNNING && status != FINISHED) {
+		status = IDLE;
+	}
+}
+
 void scheduler_init() {
 	uint16_t loaded_state[24];
 	flash_load(SCHEDULER_ADDR, 24, &loaded_state);
 	if(loaded_state[0] != 0xFFEE) return;
-	Set_SystemTime(loaded_state[1] << 16 | loaded_state[2]);
+	uint32_t system_time = (loaded_state[1] << 16) | loaded_state[2];
+	Set_SystemTime(system_time);
 	status = (RunningState)loaded_state[3];
+	validate_status();
+
 	memcpy(&current_request, loaded_state+4, sizeof(Request));
 	memcpy(&next_request, loaded_state+14, sizeof(Request));
+
+	if (check_request(current_request, system_time)) status = IDLE;
 }
 
 void scheduler_save_state() {
@@ -80,9 +91,11 @@ void scheduler_on_even_second() {
 	if(status != IDLE) return;
 	uint32_t time = Get_SystemTime();
 
-	if(next_request.start_time > time) {
-		current_request = next_request;
-		status = STARTING;
+	if(next_request.ID > 0){
+		if(check_request(next_request, time)){
+			current_request = next_request;
+			status = STARTING;
+		} else current_request = empty_request;
 	} else if (next_request.start_time > 0) {
 		add_error(next_request.ID, TIMEOUT);
 	}
@@ -97,7 +110,7 @@ void scheduler_on_even_second() {
 		}
 	}
 
-	if (next_request.type != MAX_HITS && next_request.type != MAX_TIME) {
+	if (next_request.type != MAX_HITS && next_request.type != MAX_TIME && next_request.type != SELFTEST) {
 		next_request = empty_request;
 	}
 }
@@ -130,9 +143,8 @@ void scheduler_update() {
 			scheduler_enter_sleep();
 		}
 	}
-	if (status != IDLE && status != STARTING && status != RUNNING && status != FINISHED) {
-		status = IDLE;
-	}
+
+	validate_status();
 
 	if (sleep_timer == 1) {
 		sleep_timer = 0;
