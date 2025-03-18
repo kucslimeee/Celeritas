@@ -47,7 +47,8 @@ void scheduler_init() {
 	memcpy(&current_request, loaded_state+4, sizeof(Request));
 	memcpy(&next_request, loaded_state+14, sizeof(Request));
 
-	if (check_request(current_request, system_time)) status = IDLE;
+	if (!check_request(current_request, system_time)) status = IDLE;
+	if (!check_request(next_request, system_time)) next_request = empty_request;
 }
 
 void scheduler_save_state() {

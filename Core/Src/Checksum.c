@@ -27,7 +27,7 @@ int power_calc(int base, int exponent){         //power function / hatvány füg
 
 uint8_t calculate_checksum(uint8_t item[], int length){                      // new checksum
     uint8_t sum = 0;                                // return value
-    uint8_t count[8];                               // for storing seperately
+    uint8_t count[length];                               // for storing seperately
 
     for (int i = 0; i < length; i++) {                  // go through each byte
 
