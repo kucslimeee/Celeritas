@@ -98,6 +98,7 @@ void measure(Request request){
 		}
 	}
 
+	HAL_Delay(1);	//just to make time to separately see the shutdown on the oscilloscope
 	HAL_ADC_Stop(&hadc1);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 0);
 	HAL_Delay(500);
