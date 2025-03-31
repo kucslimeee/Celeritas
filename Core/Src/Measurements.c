@@ -31,11 +31,6 @@ void measure(Request request){
 	uint16_t peaks = 0;
 	bool running = true;
 
-	select_measurement_channel();
-
-	HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED); 	// ADC auto calibration for single-ended input (has to be called before start)
-	HAL_ADC_Start(&hadc1);									// Start the ADC
-
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 1);
 
@@ -85,7 +80,12 @@ void measure(Request request){
 		}
 	}
 
-	HAL_Delay(1000);
+	HAL_Delay(500);
+	select_measurement_channel();
+	HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED); 	// ADC auto calibration for single-ended input (has to be called before start)
+	HAL_ADC_Start(&hadc1);									// Start the ADC
+
+
 	while(running){
 		uint16_t sample = sample_adc(request.samples, request.min_voltage, request.max_voltage, request.is_okay);
 		if(!sample) break;
@@ -98,10 +98,12 @@ void measure(Request request){
 		}
 	}
 
+	HAL_Delay(1);	//just to make time to separately see the shutdown on the oscilloscope
 	HAL_ADC_Stop(&hadc1);
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
-	HAL_Delay(1000);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 0);
+	HAL_Delay(500);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
+
 	if(request.is_header){
 		add_header(request, request.limit);
 		add_spectrum(request, measurementData, resolution);
@@ -122,7 +124,7 @@ uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage,
 		uint16_t voltage;
 		do {
 			voltage = analogRead();
-		}while (voltage > min_voltage && status == RUNNING);
+		}while (voltage > (min_voltage - 20) && status == RUNNING);
 		if(okaying) HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
 	}
 
@@ -132,8 +134,8 @@ uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage,
 		}
 		sum = analogRead(); //measure ADC
 		if(sum > max_voltage) wait_for_min_threshold(true);
-		if(!(sum > min_voltage && sum < max_voltage)) continue;
-		for(int i = 1; i < samples; i++){
+		if(!(sum > (min_voltage + 20) && sum < (max_voltage - 20))) continue;
+		for(int i = 1; i <= samples; i++){
 			sum += analogRead();
 		}
 		break;
