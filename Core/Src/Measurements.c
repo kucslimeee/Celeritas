@@ -23,91 +23,78 @@ extern volatile RunningState status;
 
 uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage, bool is_okay);
 
+/**
+ * TODO: Detailed documentation of the measurement process
+ * Until it's completed please refer to Trello.
+ */
 void measure(Request request){
 
 	uint8_t resolution = request.resolution;
-	uint8_t* measurementData[16] = {};
-	uint16_t intervalLength = (request.max_voltage - request.min_voltage)/resolution;
+
+	// `measurementData` must be at least 16 byte (or 8 uint16_t item) long
+	// because we must produce a full packet (at least) per measurement.
+	uint8_t arr_lenght = (resolution < 8 ) ? 8 : resolution;
+	uint16_t measurementData[arr_length];
+
+	uint16_t intervalLength = (request.max_voltage - request.min_voltage)/resolution; // the range of a single channel
 	uint16_t peaks = 0;
 	bool running = true;
 
+	// ADC setup
 	select_measurement_channel();
-
 	HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED); 	// ADC auto calibration for single-ended input (has to be called before start)
 	HAL_ADC_Start(&hadc1);									// Start the ADC
 
+	// Start of the analog chain
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 1);
 
-	void incrementCategory(uint8_t interval) {
-		#define INCREMENT(TYPE, SIZE)	\
-		({						\
-			if(*((TYPE*)measurementData+interval) < (SIZE)) { \
-				*((TYPE*)measurementData+interval) += 1; \
-			} \
-			else if (!request.continue_with_full_channel) { \
-				running = false; \
-			}\
-		})
-
-		switch(resolution) {
-		case 2:
-			INCREMENT(uint64_t, UINT64_MAX);
-			break;
-		case 4:
-			INCREMENT(uint32_t, UINT32_MAX);
-			break;
-		case 8:
-			INCREMENT(uint16_t, UINT16_MAX);
-			break;
-		case 16:
-			INCREMENT(uint8_t, UINT8_MAX);
-			break;
-		case 32:
-		case 64:
-		case 128:
-			uint8_t intervalsPerByte = resolution / 16; // how many intervals are in a single byte
-			uint8_t intervalSize = 8 / intervalsPerByte; // measured in bits
-			uint8_t byteIndex = interval / intervalsPerByte;
-			uint8_t intervalByte = *((uint8_t*)measurementData+byteIndex);
-			uint8_t intervalLimit = 512 / resolution; // the max value of the interval
-			uint8_t intervalIdx = interval - (byteIndex * intervalsPerByte); // the index of interval inside of a byte
-			uint8_t intervalMask = (0xFF >> (8 - intervalSize));
-			uint8_t intervalValue = (intervalByte >> ((intervalsPerByte - (intervalIdx + 1)) * intervalSize)) & intervalMask;
-			if((intervalValue + 1) < intervalLimit)
-				intervalByte += pow(2, (intervalSize * (intervalsPerByte - (intervalIdx + 1))));
-			else if (!request.continue_with_full_channel)
-				running = false;
-			*((uint8_t*)measurementData+byteIndex) = intervalByte;
-			break;
-		default:
-			break;
-		}
-	}
-
-	HAL_Delay(1000);
+	// Measurement
+	HAL_Delay(1000); // wait for the start of the analog chain
 	while(running){
+		// Get a sample
 		uint16_t sample = sample_adc(request.samples, request.min_voltage, request.max_voltage, request.is_okay);
 		if(!sample) break;
-		uint8_t intervalIndex = abs(sample - request.min_voltage)/intervalLength;
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, peaks % 2);
-		incrementCategory(intervalIndex);
+
+		// Calculating the channel and incrementing it
+		uint8_t intervalIndex = abs(sample - request.min_voltage)/intervalLength; // have to discuss it
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, peaks % 2); // debug LED
+		// if we are in "spectrum mode" (see trello card about it) and we haven't reached the limit of `uint16_t`,
+		// then increment the channel
+		if(resolution >= 8 && (measurementData[intervalIndex] + 1) < UINT16_MAX) {
+			measurementData[intervalIndex]++;
+		} else if(!request.continue_with_full_channel) running = false; // stop the request if we go just until the first filled channel
+
+		// Run condition checking
 		peaks++;
 		if(request.type == MAX_HITS) {
 			if(peaks == request.limit) running = false;
 		}
 	}
 
+	// Shutdown of the analog chain
 	HAL_ADC_Stop(&hadc1);
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
 	HAL_Delay(1000);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 0);
+
+	// Saving the packet
 	if(request.is_header){
 		add_header(request, request.limit);
-		add_spectrum(request, measurementData, resolution);
-	}else {
-		add_spectrum(request, measurementData, resolution);
 	}
+
+	if(resolution < 8) {
+		// "counting" mode
+		// TODO: write peaks into `measurementData`
+	} else {
+		// "spectrum" mode
+		uint8_t packets = arr_length / 8;
+		for (uint8_t i = 1; i < packets; i++) {
+			add_spectrum(request, measurementData+(i*8), resolution);
+		}
+	}
+
+	// Tell the scheduler that we're done
 	scheduler_finish_measurement();
 }
 
