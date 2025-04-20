@@ -51,7 +51,8 @@ void measure(Request request){
 
 	// Measurement
 	HAL_Delay(1000); // wait for the start of the analog chain
-	while(running){
+	uint64_t peak_limit = (request.type == MAX_HITS) ? (uint64_t)request.limit : UINT64_MAX; // saved into memory to avoid this calculation at each loop
+	for(peaks = 0; peaks < peak_limit; peaks++){
 		// Get a sample
 		uint16_t sample = sample_adc(request.samples, request.min_voltage, request.max_voltage, request.is_okay);
 		if(!sample) break;
@@ -63,13 +64,7 @@ void measure(Request request){
 		// then increment the channel
 		if(resolution >= 8 && (measurementData[intervalIndex] + 1) < UINT16_MAX) {
 			measurementData[intervalIndex]++;
-		} else if(!request.continue_with_full_channel) running = false; // stop the request if we go just until the first filled channel
-
-		// Run condition checking
-		peaks++;
-		if(request.type == MAX_HITS) {
-			if(peaks == (uint64_t)request.limit) running = false;
-		}
+		} else if(!request.continue_with_full_channel) break; // stop the request if we go just until the first filled channel
 	}
 
 	// Shutdown of the analog chain
