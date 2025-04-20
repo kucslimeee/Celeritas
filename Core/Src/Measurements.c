@@ -37,7 +37,7 @@ void measure(Request request){
 	uint16_t measurementData[arr_length];
 
 	uint16_t intervalLength = (request.max_voltage - request.min_voltage)/resolution; // the range of a single channel
-	uint16_t peaks = 0;
+	uint64_t peaks = 0;
 	bool running = true;
 
 	// ADC setup
@@ -68,7 +68,7 @@ void measure(Request request){
 		// Run condition checking
 		peaks++;
 		if(request.type == MAX_HITS) {
-			if(peaks == request.limit) running = false;
+			if(peaks == (uint64_t)request.limit) running = false;
 		}
 	}
 
@@ -84,8 +84,12 @@ void measure(Request request){
 	}
 
 	if(resolution < 8) {
-		// "counting" mode
-		// TODO: write peaks into `measurementData`
+		// "counting" mode: write peaks into `measurementData`
+		measurementData[0] =  peaks >> 6;
+		measurementData[1] = (peaks >> 4) & 0xFFFF;
+		measurementData[2] = (peaks >> 2) & 0xFFFF;
+		measurementData[3] =  peaks & 0xFFFF;
+		add_spectrum(request, measurementData, resolution);
 	} else {
 		// "spectrum" mode
 		uint8_t packets = arr_length / 8;
