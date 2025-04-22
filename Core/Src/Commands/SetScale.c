@@ -10,8 +10,8 @@
 #include <stdbool.h>
 
 bool check_res (uint16_t num) {
-	const uint16_t items[] = {2, 4, 8, 16, 32, 64, 128 };
-    for (int i = 0; i < 7; i++)
+	const uint16_t items[] = {1, 8, 16, 32, 64, 128 };
+    for (int i = 0; i < 5; i++)
     {
     	if (num == items[i]) return true;
     }

@@ -183,6 +183,6 @@ void process_Command()
 		scheduler_on_command();
 	}
 	else{
-		add_error(0, CORRUPTED);
+		//add_error(0, CORRUPTED);
 	}
 }

@@ -33,12 +33,12 @@ void measure(Request request){
 
 	// `measurementData` must be at least 16 byte (or 8 uint16_t item) long
 	// because we must produce a full packet (at least) per measurement.
-	uint8_t arr_lenght = (resolution < 8 ) ? 8 : resolution;
+	uint8_t arr_length = (resolution < 8 ) ? 8 : resolution;
 	uint16_t measurementData[arr_length];
+	memset(measurementData, 0, arr_length*2);
 
 	uint16_t intervalLength = (request.max_voltage - request.min_voltage)/resolution; // the range of a single channel
 	uint64_t peaks = 0;
-	bool running = true;
 
 	// ADC setup
 	select_measurement_channel();
@@ -64,7 +64,10 @@ void measure(Request request){
 		// then increment the channel
 		if(resolution >= 8 && (measurementData[intervalIndex] + 1) < UINT16_MAX) {
 			measurementData[intervalIndex]++;
-		} else if(!request.continue_with_full_channel) break; // stop the request if we go just until the first filled channel
+		} else if(!request.continue_with_full_channel && resolution >= 8) {
+			// note: continue_with_full_channel is only makes sense in "spectrum mode"
+			break; // stop the request if we go just until the first filled channel
+		}
 	}
 
 	// Shutdown of the analog chain
@@ -80,15 +83,15 @@ void measure(Request request){
 
 	if(resolution < 8) {
 		// "counting" mode: write peaks into `measurementData`
-		measurementData[0] =  peaks >> 6;
-		measurementData[1] = (peaks >> 4) & 0xFFFF;
-		measurementData[2] = (peaks >> 2) & 0xFFFF;
-		measurementData[3] =  peaks & 0xFFFF;
+		measurementData[0] =  peaks >> 48;				// first two bytes 	0nd and 1st	(shift (8-2) * 8 = 48 bits)
+		measurementData[1] = (peaks >> 32) & 0xFFFF;	// second two bytes	2nd and 3rd	(shift (8-4) * 8 = 32 bits)
+		measurementData[2] = (peaks >> 16) & 0xFFFF;	// thrid two bytes	4th and 5th	(shift (8-6) * 8 = 16 bits)
+		measurementData[3] =  peaks & 0xFFFF;			// fourth two bytes	6th and 7th	(shift (8-8) * 8 = 0 bits)
 		add_spectrum(request, measurementData, resolution);
 	} else {
 		// "spectrum" mode
 		uint8_t packets = arr_length / 8;
-		for (uint8_t i = 1; i < packets; i++) {
+		for (uint8_t i = 0; i < packets; i++) {
 			add_spectrum(request, measurementData+(i*8), resolution);
 		}
 	}
