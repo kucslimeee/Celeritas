@@ -88,12 +88,14 @@ void measure(Request request){
 	}
 
 	// Shutdown of the analog chain
+	HAL_Delay(1);	//just to make time to separately see the shutdown on the oscilloscope
 	HAL_ADC_Stop(&hadc1);
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
-	HAL_Delay(1000);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 0);
-
+  
 	// Saving the packet
+	HAL_Delay(500);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
+
 	if(request.is_header){
 		add_header(request, request.limit);
 	}
@@ -128,7 +130,7 @@ uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage,
 		uint16_t voltage;
 		do {
 			voltage = analogRead();
-		}while (voltage > min_voltage && status == RUNNING);
+		}while (voltage > (min_voltage - 20) && status == RUNNING);
 		if(okaying) HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
 	}
 
@@ -138,8 +140,8 @@ uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage,
 		}
 		sum = analogRead(); //measure ADC
 		if(sum > max_voltage) wait_for_min_threshold(true);
-		if(!(sum > min_voltage && sum < max_voltage)) continue;
-		for(int i = 1; i < samples; i++){
+		if(!(sum > (min_voltage + 20) && sum < (max_voltage - 20))) continue;
+		for(int i = 1; i <= samples; i++){
 			sum += analogRead();
 		}
 		break;
