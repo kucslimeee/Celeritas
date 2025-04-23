@@ -72,17 +72,18 @@ void measure(Request request){
 		// Get a sample
 		uint16_t sample = sample_adc(request.samples, request.min_voltage, request.max_voltage, request.is_okay);
 		if(!sample) break;
-
-		// Calculating the channel and incrementing it
-		uint8_t intervalIndex = abs(sample - request.min_voltage)/intervalLength; // have to discuss it
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, peaks % 2); // debug LED
-		// if we are in "spectrum mode" (see trello card about it) and we haven't reached the limit of `uint16_t`,
-		// then increment the channel
-		if(resolution >= 8 && (measurementData[intervalIndex] + 1) < UINT16_MAX) {
-			measurementData[intervalIndex]++;
-		} else if(!request.continue_with_full_channel && resolution >= 8) {
-			// note: continue_with_full_channel is only makes sense in "spectrum mode"
-			break; // stop the request if we go just until the first filled channel
+
+		// Store the sample
+		// note: at "counting mode" we don't have to execute all this stuff as we only count the number of peaks
+		if (resolution >= 8) {
+			// Calculating the channel and incrementing it
+			uint8_t intervalIndex = abs(sample - request.min_voltage)/intervalLength; // have to discuss it
+			if((measurementData[intervalIndex] + 1) < UINT16_MAX) {
+				measurementData[intervalIndex]++;
+			} else if(!request.continue_with_full_channel) {
+				break; // stop the request if we go just until the first filled channel
+			}
 		}
 	}
 
