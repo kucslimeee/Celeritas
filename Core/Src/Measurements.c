@@ -24,8 +24,24 @@ extern volatile RunningState status;
 uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage, bool is_okay);
 
 /**
- * TODO: Detailed documentation of the measurement process
- * Until it's completed please refer to Trello.
+ * The measurement process of Celeritas.
+ *
+ * First it takes a Request as its configuration and sets up all the necessary data structures,
+ * then starts the analog hardware chain, the actual measuring unit and enters the "measurement loop".
+ *
+ * The measurement loop first checks its running condition (in case of MAX_HITS measurement we do a fixed amount of
+ * samples otherwise the limit is the maximum value of uint64_t) then gets a sample.
+ * After we have our sample we can store it in two different ways, depending on the resolution of the measurement:
+ *  - In "counting mode" (when the resolution is 1) we only count how many samples we've got and don't save any channels.
+ *  - In "spectrum mode" (resolution >= 8) we fit the samples into channels (a given range of the whole measurement spectrum).
+ *    With each sample we increment the appropriate channel and send how many samples we've had in that specific channel.
+ * 	  Each channel is able to register 65535 samples and when one of them is reached this limit, we say it is filled.
+ * 	  At this point we are able to interrupt the measurement process by setting the `request.continue_with_full_channel` option
+ * 	  to false. Of course we can go forward, though we might lose samples in the spectrum of the filled channels since we can't
+ * 	  register any new record.
+ *
+ * When we've finished with the measurement we shut down the analog measurement unit and store the results in i2c_queue.
+ * At last we notify the Scheduler that we're finished.
  */
 void measure(Request request){
 
@@ -83,10 +99,10 @@ void measure(Request request){
 
 	if(resolution < 8) {
 		// "counting" mode: write peaks into `measurementData`
-		measurementData[0] =  peaks >> 48;				// first two bytes 	0nd and 1st	(shift (8-2) * 8 = 48 bits)
-		measurementData[1] = (peaks >> 32) & 0xFFFF;	// second two bytes	2nd and 3rd	(shift (8-4) * 8 = 32 bits)
-		measurementData[2] = (peaks >> 16) & 0xFFFF;	// thrid two bytes	4th and 5th	(shift (8-6) * 8 = 16 bits)
-		measurementData[3] =  peaks & 0xFFFF;			// fourth two bytes	6th and 7th	(shift (8-8) * 8 = 0 bits)
+		measurementData[0] =  peaks >> 48;				// first 	two bytes 	0nd and 1st	(shift (8-2) * 8 = 48 bits)
+		measurementData[1] = (peaks >> 32) & 0xFFFF;	// second 	two bytes	2nd and 3rd	(shift (8-4) * 8 = 32 bits)
+		measurementData[2] = (peaks >> 16) & 0xFFFF;	// thrid 	two bytes	4th and 5th	(shift (8-6) * 8 = 16 bits)
+		measurementData[3] =  peaks & 0xFFFF;			// fourth 	two bytes	6th and 7th	(shift (8-8) * 8 = 0 bits)
 		add_spectrum(request, measurementData, resolution);
 	} else {
 		// "spectrum" mode
