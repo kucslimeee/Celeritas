@@ -23,93 +23,99 @@ extern volatile RunningState status;
 
 uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage, bool is_okay);
 
+/**
+ * The measurement process of Celeritas.
+ *
+ * First it takes a Request as its configuration and sets up all the necessary data structures,
+ * then starts the analog hardware chain, the actual measuring unit and enters the "measurement loop".
+ *
+ * The measurement loop first checks its running condition (in case of MAX_HITS measurement we do a fixed amount of
+ * samples otherwise the limit is the maximum value of uint64_t) then gets a sample.
+ * After we have our sample we can store it in two different ways, depending on the resolution of the measurement:
+ *  - In "counting mode" (when the resolution is 1) we only count how many samples we've got and don't save any channels.
+ *  - In "spectrum mode" (resolution >= 8) we fit the samples into channels (a given range of the whole measurement spectrum).
+ *    With each sample we increment the appropriate channel and send how many samples we've had in that specific channel.
+ * 	  Each channel is able to register 65535 samples and when one of them is reached this limit, we say it is filled.
+ * 	  At this point we are able to interrupt the measurement process by setting the `request.continue_with_full_channel` option
+ * 	  to false. Of course we can go forward, though we might lose samples in the spectrum of the filled channels since we can't
+ * 	  register any new record.
+ *
+ * When we've finished with the measurement we shut down the analog measurement unit and store the results in i2c_queue.
+ * At last we notify the Scheduler that we're finished.
+ */
 void measure(Request request){
 
 	uint8_t resolution = request.resolution;
-	uint8_t* measurementData[16] = {};
-	uint16_t intervalLength = (request.max_voltage - request.min_voltage)/resolution;
-	uint16_t peaks = 0;
-	bool running = true;
 
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1);
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 1);
+	// `measurementData` must be at least 16 byte (or 8 uint16_t item) long
+	// because we must produce a full packet (at least) per measurement.
+	uint8_t arr_length = (resolution < 8 ) ? 8 : resolution;
+	uint16_t measurementData[arr_length];
+	memset(measurementData, 0, arr_length*2);
 
-	void incrementCategory(uint8_t interval) {
-		#define INCREMENT(TYPE, SIZE)	\
-		({						\
-			if(*((TYPE*)measurementData+interval) < (SIZE)) { \
-				*((TYPE*)measurementData+interval) += 1; \
-			} \
-			else if (!request.continue_with_full_channel) { \
-				running = false; \
-			}\
-		})
+	uint16_t intervalLength = (request.max_voltage - request.min_voltage)/resolution; // the range of a single channel
+	uint64_t peaks = 0;
 
-		switch(resolution) {
-		case 2:
-			INCREMENT(uint64_t, UINT64_MAX);
-			break;
-		case 4:
-			INCREMENT(uint32_t, UINT32_MAX);
-			break;
-		case 8:
-			INCREMENT(uint16_t, UINT16_MAX);
-			break;
-		case 16:
-			INCREMENT(uint8_t, UINT8_MAX);
-			break;
-		case 32:
-		case 64:
-		case 128:
-			uint8_t intervalsPerByte = resolution / 16; // how many intervals are in a single byte
-			uint8_t intervalSize = 8 / intervalsPerByte; // measured in bits
-			uint8_t byteIndex = interval / intervalsPerByte;
-			uint8_t intervalByte = *((uint8_t*)measurementData+byteIndex);
-			uint8_t intervalLimit = 512 / resolution; // the max value of the interval
-			uint8_t intervalIdx = interval - (byteIndex * intervalsPerByte); // the index of interval inside of a byte
-			uint8_t intervalMask = (0xFF >> (8 - intervalSize));
-			uint8_t intervalValue = (intervalByte >> ((intervalsPerByte - (intervalIdx + 1)) * intervalSize)) & intervalMask;
-			if((intervalValue + 1) < intervalLimit)
-				intervalByte += pow(2, (intervalSize * (intervalsPerByte - (intervalIdx + 1))));
-			else if (!request.continue_with_full_channel)
-				running = false;
-			*((uint8_t*)measurementData+byteIndex) = intervalByte;
-			break;
-		default:
-			break;
-		}
-	}
-
-	HAL_Delay(500);
+	// ADC setup
 	select_measurement_channel();
 	HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED); 	// ADC auto calibration for single-ended input (has to be called before start)
 	HAL_ADC_Start(&hadc1);									// Start the ADC
 
+	// Start of the analog chain
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 1);
 
-	while(running){
+	// Measurement
+	HAL_Delay(1000); // wait for the start of the analog chain
+	uint64_t peak_limit = (request.type == MAX_HITS) ? (uint64_t)request.limit : UINT64_MAX; // saved into memory to avoid this calculation at each loop
+	for(peaks = 0; peaks < peak_limit; peaks++){
+		// Get a sample
 		uint16_t sample = sample_adc(request.samples, request.min_voltage, request.max_voltage, request.is_okay);
 		if(!sample) break;
-		uint8_t intervalIndex = abs(sample - request.min_voltage)/intervalLength;
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, peaks % 2);
-		incrementCategory(intervalIndex);
-		peaks++;
-		if(request.type == MAX_HITS) {
-			if(peaks == request.limit) running = false;
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, peaks % 2); // debug LED
+
+		// Store the sample
+		// note: at "counting mode" we don't have to execute all this stuff as we only count the number of peaks
+		if (resolution >= 8) {
+			// Calculating the channel and incrementing it
+			uint8_t intervalIndex = abs(sample - request.min_voltage)/intervalLength; // have to discuss it
+			if((measurementData[intervalIndex] + 1) < UINT16_MAX) {
+				measurementData[intervalIndex]++;
+			} else if(!request.continue_with_full_channel) {
+				break; // stop the request if we go just until the first filled channel
+			}
 		}
 	}
 
+	// Shutdown of the analog chain
 	HAL_Delay(1);	//just to make time to separately see the shutdown on the oscilloscope
 	HAL_ADC_Stop(&hadc1);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 0);
+  
+	// Saving the packet
 	HAL_Delay(500);
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
 
 	if(request.is_header){
 		add_header(request, request.limit);
-		add_spectrum(request, measurementData, resolution);
-	}else {
-		add_spectrum(request, measurementData, resolution);
 	}
+
+	if(resolution < 8) {
+		// "counting" mode: write peaks into `measurementData`
+		measurementData[0] =  peaks >> 48;				// first 	two bytes 	0nd and 1st	(shift (8-2) * 8 = 48 bits)
+		measurementData[1] = (peaks >> 32) & 0xFFFF;	// second 	two bytes	2nd and 3rd	(shift (8-4) * 8 = 32 bits)
+		measurementData[2] = (peaks >> 16) & 0xFFFF;	// thrid 	two bytes	4th and 5th	(shift (8-6) * 8 = 16 bits)
+		measurementData[3] =  peaks & 0xFFFF;			// fourth 	two bytes	6th and 7th	(shift (8-8) * 8 = 0 bits)
+		add_spectrum(request, measurementData, resolution);
+	} else {
+		// "spectrum" mode
+		uint8_t packets = arr_length / 8;
+		for (uint8_t i = 0; i < packets; i++) {
+			add_spectrum(request, measurementData+(i*8), resolution);
+		}
+	}
+
+	// Tell the scheduler that we're done
 	scheduler_finish_measurement();
 }
 
