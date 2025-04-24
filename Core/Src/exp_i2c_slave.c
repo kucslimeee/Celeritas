@@ -4,16 +4,6 @@
  *  Created on: Aug 5, 2024
  *      Author: hadha
  */
-
-
-/*
- * i2c_slave.c
- *
- *  Created on: Aug 1, 2024
- *      Author: hadha
- */
-
-
 #include "main.h"
 #include "exp_i2c_slave.h"
 #include <stdbool.h>
@@ -124,7 +114,6 @@ void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) //Bus Error / Berror??????
 		{
 			//bytesRrecvd = rxcount-1;  // the first byte is the register address
 			rxcount = 0;  // Reset the rxcount for the next operation
-			process_Command();
 		}
 		else // error while slave is transmitting
 		{
@@ -183,6 +172,6 @@ void process_Command()
 		scheduler_on_command();
 	}
 	else{
-		//add_error(0, CORRUPTED);
+		add_error(0, CORRUPTED);
 	}
 }
