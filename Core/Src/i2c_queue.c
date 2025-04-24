@@ -121,18 +121,10 @@ void add_header(Request request, uint16_t duration){
 	 i2c_queue_push(((uint8_t*)spectrum), false);
 }
 
- void add_error(uint8_t request_id, uint8_t error_type){
+ void add_error(uint8_t request_id, ErrorType error_type){
 	 uint8_t errorData[15] = {0};
 	 errorData[0] = request_id;
 	 errorData[14] = 0xD5;
-	 if(error_type == TIMEOUT){
-		 errorData[13] = 0xFD;
-	 }
-	 if(error_type == INTERRUPT){
-		 errorData[13] = 0xFB;
-	 }
-	 if(error_type == CORRUPTED){
-	 	errorData[13] = 0xF7;
-	 }
+   errorData[15] = (uint8_t)error_type;
 	 i2c_queue_push(errorData, true);
  }

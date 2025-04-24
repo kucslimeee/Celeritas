@@ -1,22 +1,23 @@
 /*
-  * i2c_queue.h
-  *
-  * Created on: Sep 11, 2024
-  * 	   Author: badam
-  */
+ * i2c_queue.h
+ *
+ * Created on: Sep 11, 2024
+ * 	   Author: badam
+ */
 
- #ifndef INC_I2C_QUEUE_H_
- #define INC_I2C_QUEUE_H_
+#ifndef INC_I2C_QUEUE_H_
+#define INC_I2C_QUEUE_H_
 
- #include <stdbool.h>
- #include <stdint.h>
- #include <string.h>
- #include "Checksum.h"
+#include <stdbool.h>
+#include <stdint.h>
+#include <string.h>
+#include "Checksum.h"
 #include "Request.h"
 
-#define TIMEOUT 0xFD
-#define INTERRUPT 0xFB
-#define CORRUPTED 0xF7
+typedef enum class {
+  TIMEOUT = 0xFD,
+  CORRUPTED = 0xF7,
+} ErrorType;
 
 void i2c_queue_init();
 void i2c_queue_push(uint8_t* item, bool checksum);
