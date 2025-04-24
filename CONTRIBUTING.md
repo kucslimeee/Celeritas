@@ -96,9 +96,8 @@ The maintainer then will ask others (or himself) to review your changes and if e
 ### Starting the process
 You can open a new PR from your fork when you have any commits that the upstream repo doesn't. (GitHub will automatically suggest that with the yellow backgrounded section with the green button.)
 
-When you start your PR, fill in the right template:
-- use Trello if you work with a trello issue (its likely to happen)
-- use Basic if you don't have a trello issue
+In the body of your PR, please introduce your changes shortly and if you are working basiced on a Trello card (and hopefully you do so) please link or mention your card.
+However if you do not have a Trello card please also tell us why you've done your changes.
 
 Then ask someone to review your code, make sure you did all the stuff needed and create the Pull Request. 
 Go to the top of the right panel and choose a (hopefully active) user to review your code.
