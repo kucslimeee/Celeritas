@@ -10,7 +10,13 @@ you can open back a pull request to merge your code to this repo.
 To create a new fork click on the branch icon and wait.
 
 ## Git
-Install here: 
+Install [here](https://git-scm.com/downloads).
+
+Also if you are on linux make sure that you assigned a text editor to git.
+You can do it with the following command:
+```bash
+git config --global core.editor "nvim" # or your basic text editor of choice
+```
 
 ### Setting up SSH authentication
 In order to work from your computer with Git you must use SSH authentication.
@@ -42,12 +48,14 @@ The first line should always be a short title of your commit, where you summariz
 
 For example:
 > optimised measurement loop
+
 > fixed xy bug
+
 > implemented a new subsystem (I hope we won't need this type of commit a lot)
 
 Then explain the changes you've made detailing why the program benefits from them.
 If this is a bug tell us what was it and how you fixed.
-If your work has a trello card open (its likely to happen) its okay to say "for details look at the trello card" if you 
+If your work has a trello card open (its likely to happen) its okay to say "for details look at the trello card" if you
 are talking about something deep and well documented in Trello.
 
 After you committed, push your work to GitHub to save it to the cloud.
@@ -64,7 +72,7 @@ when you finished with a well defineable part of your work (e.g. subtasks in tre
 > It is important that you only sync when you're merged your stuff and doesn't have anything unfinished as there might be conflicts with the upstream repository.
 
 As we're working in a team sometimes we need each others' changes.
-First at your fork, sync your codebase with the upstream repository (it will be shown as a 
+First at your fork, sync your codebase with the upstream repository (it will be shown as a
 yellow backgrounded section with a green button. Click it). After you've done with Github you should also pull the upstream changes to your local clone by the following command:
 ```bash
 git pull origin main # or any other branch if you know what you're doing
@@ -80,7 +88,7 @@ Here I'd say a few words about the GitHub apps around us that might help our wor
 > Link: [github.com/mobile](https://github.com/mobile)
 
 GitHub has a mobile app for easier access on the go.
-It has code navigation, issues, and full pull request support. 
+It has code navigation, issues, and full pull request support.
 
 ### GitHub Desktop
 > Link: [github.com/apps/desktop](https://github.com/apps/desktop)
@@ -99,7 +107,7 @@ You can open a new PR from your fork when you have any commits that the upstream
 In the body of your PR, please introduce your changes shortly and if you are working basiced on a Trello card (and hopefully you do so) please link or mention your card.
 However if you do not have a Trello card please also tell us why you've done your changes.
 
-Then ask someone to review your code, make sure you did all the stuff needed and create the Pull Request. 
+Then ask someone to review your code, make sure you did all the stuff needed and create the Pull Request.
 Go to the top of the right panel and choose a (hopefully active) user to review your code.
 He will be notified with an email about that.
 
