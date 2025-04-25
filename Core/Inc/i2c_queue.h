@@ -14,7 +14,7 @@
 #include "Checksum.h"
 #include "Request.h"
 
-typedef enum class {
+typedef enum {
   TIMEOUT = 0xFD,
   CORRUPTED = 0xF7,
 } ErrorType;
