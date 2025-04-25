@@ -116,9 +116,8 @@ void add_header(Request request, uint16_t duration){
 
  }
 
-
- void add_spectrum(Request request, void* spectrum, uint8_t resolution){
-	 i2c_queue_push(((uint8_t*)spectrum), false);
+void add_spectrum(uint16_t* spectrum){
+	i2c_queue_push(((uint8_t*)spectrum), false);
 }
 
  void add_error(uint8_t request_id, ErrorType error_type){

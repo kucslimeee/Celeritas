@@ -106,12 +106,17 @@ void measure(Request request){
 		measurementData[1] = (peaks >> 32) & 0xFFFF;	// second 	two bytes	2nd and 3rd	(shift (8-4) * 8 = 32 bits)
 		measurementData[2] = (peaks >> 16) & 0xFFFF;	// thrid 	two bytes	4th and 5th	(shift (8-6) * 8 = 16 bits)
 		measurementData[3] =  peaks & 0xFFFF;			// fourth 	two bytes	6th and 7th	(shift (8-8) * 8 = 0 bits)
-		add_spectrum(request, measurementData, resolution);
+		add_spectrum(measurementData);
 	} else {
 		// "spectrum" mode
+
+		// swapping the bytes inside of channels
+		for (int i = 0; i < arr_length; i++)
+			measurementData[i] = (measurementData[i] << 8) | (measurementData[i] >> 8);
+
 		uint8_t packets = arr_length / 8;
 		for (uint8_t i = 0; i < packets; i++) {
-			add_spectrum(request, measurementData+(i*8), resolution);
+			add_spectrum(measurementData+(i*8));
 		}
 	}
 
