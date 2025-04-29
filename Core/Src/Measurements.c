@@ -17,6 +17,12 @@
 
 #include "stm32f3xx_ll_adc.h"
 
+uint8_t resolution = 16;			//globals
+uint8_t arr_length = 1;
+uint16_t intervalLength =0 ;
+uint64_t peak_counter = 0;
+uint64_t peak_limit = 0;
+uint8_t intervalIndex = 0;
 
 extern ADC_HandleTypeDef hadc1;
 extern volatile RunningState status;
@@ -45,16 +51,16 @@ uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage,
  */
 void measure(Request request){
 
-	uint8_t resolution = request.resolution;
+	resolution = request.resolution;
 
 	// `measurementData` must be at least 16 byte (or 8 uint16_t item) long
 	// because we must produce a full packet (at least) per measurement.
-	uint8_t arr_length = (resolution < 8 ) ? 8 : resolution;
+	arr_length = (resolution < 8 ) ? 8 : resolution;
 	uint16_t measurementData[arr_length];
 	memset(measurementData, 0, arr_length*2);
 
-	uint16_t intervalLength = (request.max_voltage - request.min_voltage)/resolution; // the range of a single channel
-	uint64_t peaks = 0;
+	intervalLength = (request.max_voltage - request.min_voltage)/resolution; // the range of a single channel
+	peak_counter = 0;
 
 	// ADC setup
 	select_measurement_channel();
@@ -67,19 +73,22 @@ void measure(Request request){
 
 	// Measurement
 	HAL_Delay(1000); // wait for the start of the analog chain
-	uint64_t peak_limit = (request.type == MAX_HITS) ? (uint64_t)request.limit : UINT64_MAX; // saved into memory to avoid this calculation at each loop
-	for(peaks = 0; peaks < peak_limit; peaks++){
+	peak_limit = (request.type == MAX_HITS) ? (uint64_t)request.limit : UINT64_MAX; // saved into memory to avoid this calculation at each loop
+	for(peak_counter = 0; peak_counter < peak_limit; peak_counter++){
 		// Get a sample
 		uint16_t sample = sample_adc(request.samples, request.min_voltage, request.max_voltage, request.is_okay);
 		if(!sample) break;
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, peaks % 2); // debug LED
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, peak_counter % 2); // debug LED
 
 		// Store the sample
 		// note: at "counting mode" we don't have to execute all this stuff as we only count the number of peaks
 		if (resolution >= 8) {
 			// Calculating the channel and incrementing it
-			uint8_t intervalIndex = abs(sample - request.min_voltage)/intervalLength; // have to discuss it
-			if((measurementData[intervalIndex] + 1) < UINT16_MAX) {
+
+			intervalIndex = (sample - request.min_voltage)/intervalLength -1;
+			if(intervalIndex > resolution - 1) {intervalIndex = resolution - 1;};	//if the the calculated channel number is higher than the maximum, then set is to the maximum
+			if(intervalIndex <= 0) {intervalIndex = 0;};								//if somehow the channel number is lower than 0, then it is 0
+			if((measurementData[intervalIndex] + 1) < UINT16_MAX) {				//look out! channel 1 is saved in measurementData[0], if the channel is full (65535), then do not overflow
 				measurementData[intervalIndex]++;
 			} else if(!request.continue_with_full_channel) {
 				break; // stop the request if we go just until the first filled channel
@@ -92,20 +101,21 @@ void measure(Request request){
 	HAL_ADC_Stop(&hadc1);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 0);
   
-	// Saving the packet
 	HAL_Delay(500);
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
 
+	//Adding the header packet
 	if(request.is_header){
 		add_header(request, request.limit);
 	}
 
 	if(resolution < 8) {
 		// "counting" mode: write peaks into `measurementData`
-		measurementData[0] =  peaks >> 48;				// first 	two bytes 	0nd and 1st	(shift (8-2) * 8 = 48 bits)
-		measurementData[1] = (peaks >> 32) & 0xFFFF;	// second 	two bytes	2nd and 3rd	(shift (8-4) * 8 = 32 bits)
-		measurementData[2] = (peaks >> 16) & 0xFFFF;	// thrid 	two bytes	4th and 5th	(shift (8-6) * 8 = 16 bits)
-		measurementData[3] =  peaks & 0xFFFF;			// fourth 	two bytes	6th and 7th	(shift (8-8) * 8 = 0 bits)
+		//saving the number of peaks counted
+		measurementData[0] =  peak_counter >> 48;				// first 	two bytes 	0nd and 1st	(shift (8-2) * 8 = 48 bits)
+		measurementData[1] = (peak_counter >> 32) & 0xFFFF;	// second 	two bytes	2nd and 3rd	(shift (8-4) * 8 = 32 bits)
+		measurementData[2] = (peak_counter >> 16) & 0xFFFF;	// thrid 	two bytes	4th and 5th	(shift (8-6) * 8 = 16 bits)
+		measurementData[3] =  peak_counter & 0xFFFF;			// fourth 	two bytes	6th and 7th	(shift (8-8) * 8 = 0 bits)
 		add_spectrum(measurementData);
 	} else {
 		// "spectrum" mode
@@ -159,32 +169,55 @@ uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage,
 
 uint16_t analogRead()
 {
-	HAL_ADC_PollForConversion(&hadc1, 100); // poll for conversion
-	return HAL_ADC_GetValue(&hadc1); // get the adc value
+	HAL_ADC_PollForConversion(&hadc1, 100);		// poll for conversion
+	uint32_t value = HAL_ADC_GetValue(&hadc1);
+	return (uint16_t)value; 						// get the adc value
 }
 
 
-int get_temperature() {					//units: K (deg)
-	select_temperature_channel();
-	HAL_ADC_Start(&hadc1);
+uint16_t get_temperature() {					//units: K (deg)
+	select_temperature_channel();				//select the temperature channel
+	uint32_t value = 0;							//for sampling
+	HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED); 	// ADC auto calibration for single-ended input (has to be called before start)
+	HAL_ADC_Start(&hadc1);									//start the ADC
 	HAL_ADC_PollForConversion(&hadc1, 100);
-	int adc = HAL_ADC_GetValue(&hadc1);
-	adc = __LL_ADC_CALC_TEMPERATURE_TYP_PARAMS(4300, 1430, 298, 3300, adc, LL_ADC_RESOLUTION_12B);
+	value = HAL_ADC_GetValue(&hadc1);
+										//inbuilt driver for temperature calc; (°C - offset + 273 = K)
+	uint32_t adc = 273 - 10 + __LL_ADC_CALC_TEMPERATURE_TYP_PARAMS(4300, 1430, 25, 3300, value, LL_ADC_RESOLUTION_12B);
+
+
+	/*uint16_t ref_point = 1430;		//take the voltage, where the temperature is 25 °C or 298 K
+	uint32_t conv = 0;				// convert (and also look out for not getting negative values and twos complement
+	if(value <= ref_point) {						//Temperature (in °C) = {(V25 – VTS) / Avg_Slope} + 25 according to datasheet
+		conv = 273-((ref_point-value)/4.3);
+	}
+	else {conv = 273+((value-ref_point)/4.3);};
+
+	int *ptr1 = 0x1FFFF7B8;		//memory adresses with stored calibration values according to datasheet, but seem to be garbage
+	int *ptr2 = 0x1FFFF7B9;
+	int *ptr3 = 0x1FFFF7C2;
+	int *ptr4 = 0x1FFFF7C3;
+	int u1 = &ptr1;
+	int u2 = &ptr2;
+	int u3 = &ptr3;
+	int u4 = &ptr4;*/
+
 	HAL_ADC_Stop(&hadc1);
-	return adc;
-}
+	return (uint16_t)adc;		//return a uint16_t
+};
 
-int get_refint_voltage() {				//units: mV
+uint16_t get_refint_voltage() {				//units: mV
 	select_refint_channel();
-	HAL_ADC_Start(&hadc1);
+	HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED); 	// ADC auto calibration for single-ended input (has to be called before start)
+	HAL_ADC_Start(&hadc1);									//start the ADC
 	HAL_ADC_PollForConversion(&hadc1, 100);
-	int adc1 = HAL_ADC_GetValue(&hadc1);
+	uint16_t adc1 = HAL_ADC_GetValue(&hadc1);
 	adc1 = __LL_ADC_CALC_VREFANALOG_VOLTAGE(adc1, LL_ADC_RESOLUTION_12B);
 	HAL_ADC_Stop(&hadc1);
-	return adc1;
-}
+	return (uint16_t)adc1;
+};
 
-//vbat channel is not connected?
+//vbat channel is not connected. The 32 pin package does not have it.
 /*int get_vbat_voltage() {
 	select_vbat_channel();
 	HAL_ADC_Start(&hadc1);

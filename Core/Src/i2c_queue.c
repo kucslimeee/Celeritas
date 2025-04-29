@@ -92,7 +92,8 @@ void add_header(Request request, uint16_t duration){
 	 headerData[0] = request.ID;
 	 headerData[1] = (uint8_t)(interrupt_counter & 0xFF);
 
-	 uint16_t temp = get_temperature();
+
+	 uint16_t temp = get_temperature(); //measure temperature adc value and convert to Kelvin
 	 headerData[2] = temp >> 8;
 	 headerData[3] = temp & 0xFF;
 
@@ -107,9 +108,9 @@ void add_header(Request request, uint16_t duration){
 	 headerData[10] = ((request.min_voltage & 0xF) << 4) | (request.max_voltage >> 8);
 	 headerData[11] = request.max_voltage & 0xFF;
 
-	 uint16_t vbat = get_refint_voltage();
-	 headerData[12] = vbat >> 8;
-	 headerData[13] = vbat & 0xFF;
+	 uint16_t v_int = get_refint_voltage();
+	 headerData[12] = v_int >> 8;		//internal voltage reference in mV
+	 headerData[13] = v_int & 0xFF;
 
 	 headerData[14] = 0xFF;
 	 i2c_queue_push(headerData, true);
