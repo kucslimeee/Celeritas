@@ -23,7 +23,7 @@ uint16_t intervalLength = 0;
 uint64_t peak_counter = 0;
 uint64_t peak_limit = 0;
 uint8_t intervalIndex = 0;
-uint8_t is_v_high = 0;		//bool to know if the voltage is above the threshold on the ADC
+bool is_v_high = 0;		//bool to know if the voltage is above the threshold on the ADC
 uint16_t resolution_measurement = 1;
 
 extern ADC_HandleTypeDef hadc1;

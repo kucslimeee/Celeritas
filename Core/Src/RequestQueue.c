@@ -14,7 +14,6 @@ volatile Queue request_queue = {
 		.head = 0,
 		.tail = 0,
 		.size = 0,
-		.readable_size = 0,
 		.max_size = 100,
 		.flash_page = REQ_QUEUE_ADDR,
 };
@@ -51,7 +50,6 @@ void request_queue_put(Request request){
 	memcpy(request_queue.data+insert_pos*request_queue.item_size, &request, request_queue.item_size);
 	request_queue.tail = (request_queue.tail+1) % REQUEST_QUEUE_SIZE;
 	request_queue.size++;
-	request_queue.readable_size++;
 }
 
 /**
@@ -85,7 +83,6 @@ void request_queue_clear(void){
 	request_queue.head = 0;
 	request_queue.tail = 0;
 	request_queue.size = 0;
-	request_queue.readable_size = 0;
 }
 
 void request_queue_save(){
