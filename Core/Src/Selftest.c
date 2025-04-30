@@ -59,8 +59,9 @@ void selftest(Request request) {
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 0);
 	HAL_Delay(500);
 
-	uint16_t ref_voltage_temp = (uint16_t)get_refint_voltage();
+	uint16_t ref_voltage_temp = get_refint_voltage();
 	test_measurement = __LL_ADC_CALC_DATA_TO_VOLTAGE(ref_voltage_temp, test_measurement, LL_ADC_RESOLUTION_12B); //convert to mV
+
 
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
 

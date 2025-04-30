@@ -10,7 +10,7 @@
 
 volatile uint32_t current_unix_time = 0;
 volatile uint16_t counter = 0;
-
+uint16_t devide;
 /*
  * An interrupt handler to be called at the end of systick interrupt.
  */
@@ -18,8 +18,10 @@ void Systick_Interrupt(){
 	counter++;
 	// This must run in every tent of a second, otherwise we would check only the
 	// cases when our LED is turned on.
+
 	if (counter % 100 == 0) {
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, counter % 200 == 0);
+	if(status == IDLE){devide = 200;} else {devide = 1000;};		//idle status flashes rappidly, any other status flashes slowly
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, counter % devide == 0);
 	}
 	if (counter == 1000) {
 		current_unix_time++;

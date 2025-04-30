@@ -229,9 +229,9 @@ uint8_t scheduler_get_request_id(uint8_t idx) {
 }
 
 
-void scheduler_delete_request(uint8_t id) {
+/*void scheduler_delete_request(uint8_t id) {
 	request_queue_delete(id);
-}
+}*/
 
 void scheduler_delete_all_requests() {
 	request_queue_clear();

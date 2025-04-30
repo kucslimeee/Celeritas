@@ -13,8 +13,8 @@
 
 void measure(Request request);
 uint16_t analogRead();
-int get_temperature();
-void select_measure_adc();
+uint16_t get_temperature();
+uint16_t get_refint_voltage();
 
 
 #endif /* SRC_MEASUREMENTS_H_ */

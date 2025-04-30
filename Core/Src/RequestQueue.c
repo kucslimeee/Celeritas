@@ -68,13 +68,13 @@ Request request_queue_get(void) {
   * Deletes a request from the request queue by its ID.
   * If the queue is empty or the ID is not found, the function does nothing.
   */
-void request_queue_delete(uint8_t id){
+/*void request_queue_delete(uint8_t id){
 	bool condition(void* item){
 		return ((Request* )item)->ID == id;
 	}
 
 	queue_delete(&request_queue, condition);
-}
+}*/
 
 /**
   * Clears the request queue by resetting all pointers and the size.

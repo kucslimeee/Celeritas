@@ -15,5 +15,4 @@ void Systick_Interrupt();
 void Set_SystemTime(uint32_t timestamp);
 uint32_t Get_SystemTime(void);
 
-
 #endif
