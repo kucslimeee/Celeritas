@@ -14,6 +14,7 @@ volatile Queue request_queue = {
 		.head = 0,
 		.tail = 0,
 		.size = 0,
+		.readable_size = 0,
 		.max_size = 100,
 		.flash_page = REQ_QUEUE_ADDR,
 };
@@ -50,6 +51,7 @@ void request_queue_put(Request request){
 	memcpy(request_queue.data+insert_pos*request_queue.item_size, &request, request_queue.item_size);
 	request_queue.tail = (request_queue.tail+1) % REQUEST_QUEUE_SIZE;
 	request_queue.size++;
+	request_queue.readable_size++;
 }
 
 /**
@@ -68,13 +70,13 @@ Request request_queue_get(void) {
   * Deletes a request from the request queue by its ID.
   * If the queue is empty or the ID is not found, the function does nothing.
   */
-void request_queue_delete(uint8_t id){
+/*void request_queue_delete(uint8_t id){
 	bool condition(void* item){
 		return ((Request* )item)->ID == id;
 	}
 
 	queue_delete(&request_queue, condition);
-}
+}*/
 
 /**
   * Clears the request queue by resetting all pointers and the size.
@@ -83,6 +85,7 @@ void request_queue_clear(void){
 	request_queue.head = 0;
 	request_queue.tail = 0;
 	request_queue.size = 0;
+	request_queue.readable_size = 0;
 }
 
 void request_queue_save(){

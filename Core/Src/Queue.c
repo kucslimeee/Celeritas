@@ -20,13 +20,18 @@ void queue_init(Queue* queue) {
     	queue->tail++;
     }
     queue->size = queue->tail;
+    queue->readable_size = queue->tail;
+
 }
 
 void queue_push(Queue* queue, void* item) {
 
+	if(queue->tail > queue->max_size -1){queue->tail = 0;}; //if the queue reaches its max, it overflows from the beginning
+
 	memcpy(queue->data + queue->tail * queue->item_size, item, queue->item_size);
 	queue->tail = (queue->tail + 1 + QUEUE_SIZE) % QUEUE_SIZE;
- 	queue->size++;
+	queue->size++;
+ 	if(queue->readable_size > queue->max_size-1){queue->readable_size = 128;} else {queue->readable_size++;};
 }
 
 bool queue_get(Queue* queue, void** data) {
@@ -34,9 +39,11 @@ bool queue_get(Queue* queue, void** data) {
  		data = 0;
  		return false;
  	}
+    if(queue->head > queue->max_size -1){queue->head = 0;}; //if the read position reaches its max, it starts from the beginning
  	void* item = queue->data+queue->head*queue->item_size;
  	queue->head = (queue->head + 1 + QUEUE_SIZE) % QUEUE_SIZE;
  	queue->size--;
+ 	queue->readable_size--;
 
  	*data = item;
  	return true;
@@ -46,9 +53,10 @@ void queue_clear(Queue* queue) {
     queue->head = 0;
  	queue->tail = 0;
  	queue->size = 0;
+ 	queue->readable_size = 0;
 }
 
-bool queue_delete(Queue* queue, bool (*condition)(void* item)) {
+/*bool queue_delete(Queue* queue, bool (*condition)(void* item)) {
     for (int i = 0; i < queue->size; i++){
 		uint8_t index = (queue->head+i) % QUEUE_SIZE;
 		if (condition(queue->data+index)){
@@ -63,7 +71,7 @@ bool queue_delete(Queue* queue, bool (*condition)(void* item)) {
 		}
 	}
 	return false; // Error: ID not found
-}
+}*/
 
 void queue_save(Queue* queue) {
 	/*uint16_t saved_item_size = queue->item_size / 2;
@@ -75,7 +83,7 @@ void queue_save(Queue* queue) {
 				queue->item_size);
 	}*/
 	flash_save(queue->flash_page,
-		queue->size*queue->item_size/2,
+		queue->readable_size*queue->item_size/2,
 		(uint16_t*)queue->data+(queue->head*queue->item_size/2)
 	);
 }

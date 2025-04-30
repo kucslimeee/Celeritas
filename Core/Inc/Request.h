@@ -18,6 +18,7 @@ typedef enum class {
 	MAX_HITS = 0x03
 } RequestType;
 
+
 typedef struct {
 	uint8_t ID;				// (new) measurement ID
 	RequestType type;
@@ -29,7 +30,7 @@ typedef struct {
 	uint16_t min_voltage;
 	uint16_t max_voltage;
 	uint8_t samples;
-	uint8_t resolution;
+	uint16_t resolution;
 } Request;
 
 static Request empty_request = {

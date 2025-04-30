@@ -17,12 +17,14 @@
 
 #include "stm32f3xx_ll_adc.h"
 
-uint8_t resolution = 16;			//globals
-uint8_t arr_length = 1;
-uint16_t intervalLength =0 ;
+			//globals
+uint16_t arr_length = 1;
+uint16_t intervalLength = 0;
 uint64_t peak_counter = 0;
 uint64_t peak_limit = 0;
 uint8_t intervalIndex = 0;
+uint8_t is_v_high = 0;		//bool to know if the voltage is above the threshold on the ADC
+uint16_t resolution_measurement = 1;
 
 extern ADC_HandleTypeDef hadc1;
 extern volatile RunningState status;
@@ -38,8 +40,8 @@ uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage,
  * The measurement loop first checks its running condition (in case of MAX_HITS measurement we do a fixed amount of
  * samples otherwise the limit is the maximum value of uint64_t) then gets a sample.
  * After we have our sample we can store it in two different ways, depending on the resolution of the measurement:
- *  - In "counting mode" (when the resolution is 1) we only count how many samples we've got and don't save any channels.
- *  - In "spectrum mode" (resolution >= 8) we fit the samples into channels (a given range of the whole measurement spectrum).
+ *  - In "counting mode" (when the resolution_measurement is 1) we only count how many samples we've got and don't save any channels.
+ *  - In "spectrum mode" (resolution_measurement >= 8) we fit the samples into channels (a given range of the whole measurement spectrum).
  *    With each sample we increment the appropriate channel and send how many samples we've had in that specific channel.
  * 	  Each channel is able to register 65535 samples and when one of them is reached this limit, we say it is filled.
  * 	  At this point we are able to interrupt the measurement process by setting the `request.continue_with_full_channel` option
@@ -51,15 +53,14 @@ uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage,
  */
 void measure(Request request){
 
-	resolution = request.resolution;
+	resolution_measurement = request.resolution;
 
-	// `measurementData` must be at least 16 byte (or 8 uint16_t item) long
-	// because we must produce a full packet (at least) per measurement.
-	arr_length = (resolution < 8 ) ? 8 : resolution;
+
+	arr_length = resolution_measurement;
 	uint16_t measurementData[arr_length];
 	memset(measurementData, 0, arr_length*2);
 
-	intervalLength = (request.max_voltage - request.min_voltage)/resolution; // the range of a single channel
+	intervalLength = (request.max_voltage - request.min_voltage)/resolution_measurement; // the range of a single channel
 	peak_counter = 0;
 
 	// ADC setup
@@ -82,11 +83,11 @@ void measure(Request request){
 
 		// Store the sample
 		// note: at "counting mode" we don't have to execute all this stuff as we only count the number of peaks
-		if (resolution >= 8) {
+		if (resolution_measurement >= 8) {
 			// Calculating the channel and incrementing it
 
 			intervalIndex = (sample - request.min_voltage)/intervalLength -1;
-			if(intervalIndex > resolution - 1) {intervalIndex = resolution - 1;};	//if the the calculated channel number is higher than the maximum, then set is to the maximum
+			if(intervalIndex > resolution_measurement - 1) {intervalIndex = resolution_measurement - 1;};	//if the the calculated channel number is higher than the maximum, then set is to the maximum
 			if(intervalIndex <= 0) {intervalIndex = 0;};								//if somehow the channel number is lower than 0, then it is 0
 			if((measurementData[intervalIndex] + 1) < UINT16_MAX) {				//look out! channel 1 is saved in measurementData[0], if the channel is full (65535), then do not overflow
 				measurementData[intervalIndex]++;
@@ -109,7 +110,7 @@ void measure(Request request){
 		add_header(request, request.limit);
 	}
 
-	if(resolution < 8) {
+	if(resolution_measurement < 8) {
 		// "counting" mode: write peaks into `measurementData`
 		//saving the number of peaks counted
 		measurementData[0] =  peak_counter >> 48;				// first 	two bytes 	0nd and 1st	(shift (8-2) * 8 = 48 bits)
@@ -154,8 +155,12 @@ uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage,
 			return 0;
 		}
 		sum = analogRead(); //measure ADC
-		if(sum > max_voltage) wait_for_min_threshold(true);
+		if(sum > max_voltage) {
+			is_v_high = 1;
+			wait_for_min_threshold(true);
+		}
 		if(!(sum > (min_voltage + 20) && sum < (max_voltage - 20))) continue;
+		is_v_high = 1;
 		for(int i = 1; i <= samples; i++){
 			sum += analogRead();
 		}
