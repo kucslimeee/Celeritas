@@ -61,7 +61,7 @@ void measure(Request request){
 	uint16_t measurementData[arr_length];		//make a buffer for the channels
 	memset(measurementData, 0, arr_length*2);	//make every channel 0
 
-	intervalLength = (request.max_voltage - request.min_voltage)/resolution_measurement; // the range of a single channel
+	intervalLength = (uint16_t)((request.max_voltage - request.min_voltage)/resolution_measurement); // the range of a single channel.
 	peak_counter = 0;		//set peak count to zero
 
 	// Start of the analog chain
