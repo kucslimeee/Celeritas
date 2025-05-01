@@ -22,7 +22,7 @@ uint16_t arr_length = 1;
 uint16_t intervalLength = 0;
 uint64_t peak_counter = 0;
 uint64_t peak_limit = 0;
-uint8_t intervalIndex = 0;
+uint16_t intervalIndex = 0;
 bool is_v_high = 0;		//bool to know if the voltage is above the threshold on the ADC
 uint16_t resolution_measurement = 1;
 
@@ -35,64 +35,68 @@ uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage,
  * The measurement process of Celeritas.
  *
  * First it takes a Request as its configuration and sets up all the necessary data structures,
- * then starts the analog hardware chain, the actual measuring unit and enters the "measurement loop".
+ * then starts the analog hardware (signal) chain, the actual measuring unit and enters the "measurement loop".
  *
- * The measurement loop first checks its running condition (in case of MAX_HITS measurement we do a fixed amount of
- * samples otherwise the limit is the maximum value of uint64_t) then gets a sample.
- * After we have our sample we can store it in two different ways, depending on the resolution of the measurement:
+ * The measurement loop first checks its running condition:
+ * - in case of MAX_HITS measurement we want to count a fixed number of peaks
+ * - in case of MAX_TIME, the limit is the maximum value of uint64_t and the time management is done by the scheduler module
+ * The spectrometer has an adjustable channel number, that we call the resolution of the measurement:
  *  - In "counting mode" (when the resolution_measurement is 1) we only count how many samples we've got and don't save any channels.
  *  - In "spectrum mode" (resolution_measurement >= 8) we fit the samples into channels (a given range of the whole measurement spectrum).
- *    With each sample we increment the appropriate channel and send how many samples we've had in that specific channel.
- * 	  Each channel is able to register 65535 samples and when one of them is reached this limit, we say it is filled.
+ *    With each sample we increment the appropriate channel and in the end, send how many samples we've had in that specific channels.
+ * 	  Each channel is able to register up to 65535 hits and when one of them has reached it's limit, we say it is filled.
  * 	  At this point we are able to interrupt the measurement process by setting the `request.continue_with_full_channel` option
- * 	  to false. Of course we can go forward, though we might lose samples in the spectrum of the filled channels since we can't
- * 	  register any new record.
+ * 	  to false. Of course we can proceed, when `request.continue_with_full_channel` option is set true
+ * 	  though this way we lose peaks in the spectrum of the filled channels since we can't
+ * 	  register any new records on those channels (they do not overflow).
  *
  * When we've finished with the measurement we shut down the analog measurement unit and store the results in i2c_queue.
  * At last we notify the Scheduler that we're finished.
  */
 void measure(Request request){
 
-	resolution_measurement = request.resolution;
-
+	resolution_measurement = request.resolution; //input the resolution setting
 
 	arr_length = resolution_measurement;
-	uint16_t measurementData[arr_length];
-	memset(measurementData, 0, arr_length*2);
+	uint16_t measurementData[arr_length];		//make a buffer for the channels
+	memset(measurementData, 0, arr_length*2);	//make every channel 0
 
 	intervalLength = (request.max_voltage - request.min_voltage)/resolution_measurement; // the range of a single channel
-	peak_counter = 0;
+	peak_counter = 0;		//set peak count to zero
+
+	// Start of the analog chain
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1);	//turn on debug LED
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 1);	//turn on the signal chain
+
+	HAL_Delay(250); //wait 250 ms for the signal chain to turn on
 
 	// ADC setup
-	select_measurement_channel();
+	select_measurement_channel();							// select the measurement channel
 	HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED); 	// ADC auto calibration for single-ended input (has to be called before start)
 	HAL_ADC_Start(&hadc1);									// Start the ADC
 
-	// Start of the analog chain
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1);
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 1);
+	HAL_Delay(250); // wait 250 ms for absolute stabilization
 
 	// Measurement
-	HAL_Delay(1000); // wait for the start of the analog chain
-	peak_limit = (request.type == MAX_HITS) ? (uint64_t)request.limit : UINT64_MAX; // saved into memory to avoid this calculation at each loop
+	peak_limit = (request.type == MAX_HITS) ? (uint64_t)request.limit : UINT64_MAX; //the desired number of peaks (when to stop)
 	for(peak_counter = 0; peak_counter < peak_limit; peak_counter++){
 		// Get a sample
-		uint16_t sample = sample_adc(request.samples, request.min_voltage, request.max_voltage, request.is_okay);
-		if(!sample) break;
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, peak_counter % 2); // debug LED
+		uint16_t sample = sample_adc(request.samples, request.min_voltage, request.max_voltage, request.is_okay); //wait for and sample a peak
+		if(!sample) break;										//if something goes wrong, or the status is not RUNNING, then stop (see sample_adc function)
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, peak_counter % 2); // toggle the debug LED
 
 		// Store the sample
-		// note: at "counting mode" we don't have to execute all this stuff as we only count the number of peaks
+		// note: at "counting mode" we don't have to execute all this stuff as we only count the number of peaks (peak_counter stores this information)
 		if (resolution_measurement >= 8) {
 			// Calculating the channel and incrementing it
 
-			intervalIndex = (sample - request.min_voltage)/intervalLength -1;
-			if(intervalIndex > resolution_measurement - 1) {intervalIndex = resolution_measurement - 1;};	//if the the calculated channel number is higher than the maximum, then set is to the maximum
+			intervalIndex = (uint16_t)((sample - request.min_voltage)/intervalLength -1);	//which channel took a hit
+			if(intervalIndex > resolution_measurement - 1) {intervalIndex = resolution_measurement - 1;};	//if the the calculated channel number is higher than the maximum, then set it to the maximum (to avoid incrementing outside the buffer)
 			if(intervalIndex <= 0) {intervalIndex = 0;};								//if somehow the channel number is lower than 0, then it is 0
-			if((measurementData[intervalIndex] + 1) < UINT16_MAX) {				//look out! channel 1 is saved in measurementData[0], if the channel is full (65535), then do not overflow
+			if((measurementData[intervalIndex] + 1) < UINT16_MAX) {				//do not overflow the channel values
 				measurementData[intervalIndex]++;
 			} else if(!request.continue_with_full_channel) {
-				break; // stop the request if we go just until the first filled channel
+				break; 				//if we want to stop when a channel is full
 			}
 		}
 	}
@@ -100,12 +104,12 @@ void measure(Request request){
 	// Shutdown of the analog chain
 	HAL_Delay(1);	//just to make time to separately see the shutdown on the oscilloscope
 	HAL_ADC_Stop(&hadc1);
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 0);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 0);	//shutdown the signal chain
   
-	HAL_Delay(500);
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
+	HAL_Delay(500);								//wait 500 ms
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);	//turn off debug LED
 
-	//Adding the header packet
+	//Adding the header packet (if requested)
 	if(request.is_header){
 		add_header(request, request.limit);
 	}
@@ -121,11 +125,11 @@ void measure(Request request){
 	} else {
 		// "spectrum" mode
 
-		// swapping the bytes inside of channels
+		// swapping the bytes inside of channels (to see it in the Serial monitor in Big endian)
 		for (int i = 0; i < arr_length; i++)
 			measurementData[i] = (measurementData[i] << 8) | (measurementData[i] >> 8);
 
-		uint8_t packets = arr_length / 8;
+		uint8_t packets = arr_length / 8;			//save the packets in the i2c queue
 		for (uint8_t i = 0; i < packets; i++) {
 			add_spectrum(measurementData+(i*8));
 		}
@@ -139,61 +143,61 @@ void measure(Request request){
  * BEFORE YOU CALL make SURE ADC1 is INITIALIZED AND the selected channel is ADC_IN_0 !!!!
  */
 uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage, bool is_okay){
-	uint16_t sum = 0;
+	uint16_t sum = 0; //ADC value
 
-	void wait_for_min_threshold(bool okaying) {
-		if(okaying) HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+	void wait_for_min_threshold(bool okaying) {								//wait for the analog voltage to drop below the specified minimum threshold
+		if(okaying) HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);		//if the okaying bit is set, open the transistor to drain current faster from the capacitor of the peak holder
 		uint16_t voltage;
-		do {
+		do {																//do this until voltage drops below the threshold - 20 LSB for noise compensation
 			voltage = analogRead();
 		}while (voltage > (min_voltage - 20) && status == RUNNING);
-		if(okaying) HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+		if(okaying) HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);	//when done, lock the transistor
 	}
 
 	while(1){
-		if(status != RUNNING) {
+		if(status != RUNNING) {					//stop if the status is not RUNNING
 			return 0;
 		}
-		sum = analogRead(); //measure ADC
-		if(sum > max_voltage) {
-			is_v_high = 1;
-			wait_for_min_threshold(true);
-		}
-		if(!(sum > (min_voltage + 20) && sum < (max_voltage - 20))) continue;
-		is_v_high = 1;
-		for(int i = 1; i <= samples; i++){
+		sum = analogRead(); 					// measure ADC
+		if(sum > max_voltage) {					// if the voltage is higher than the maximum threshold, it means the peak is too high amplitude
+			is_v_high = 1;						//indicate that the voltage is above the minimum threshold
+			wait_for_min_threshold(true);		//wait for the too high peak to drop
+		} else { is_v_high = 0;};				//otherwhys the voltage is below min threshold
+		if(!(sum > (min_voltage + 20) && sum < (max_voltage - 20))) {continue;}; //if the voltage value does not fall in the measurement range, then skip this iteration and start the while loop again (meaning there are no peaks)
+		is_v_high = 1;							//there is a peak, the voltage is high
+		for(int i = 1; i <= samples; i++){		//take samples
 			sum += analogRead();
 		}
-		break;
+		break;									//break the while loop
 	}
 
-	wait_for_min_threshold(is_okay);
+	wait_for_min_threshold(is_okay);			//wait for the peak to drop
 
-	return (uint16_t)(sum/samples);
+	return (uint16_t)(sum/samples);				//return the sampled average ADC value of the peak
 }
 
-uint16_t analogRead()
+uint16_t analogRead()							//function for getting the ADC value
 {
-	HAL_ADC_PollForConversion(&hadc1, 100);		// poll for conversion
-	uint32_t value = HAL_ADC_GetValue(&hadc1);
-	return (uint16_t)value; 						// get the adc value
+	HAL_ADC_PollForConversion(&hadc1, 100);		// poll the ADC for conversion
+	uint32_t value = HAL_ADC_GetValue(&hadc1);	//HAL_ADC_GetValue returns in uint32_t !!!
+	return (uint16_t)value; 						// get the ADC value cast in uint16_t
 }
 
 
-uint16_t get_temperature() {					//units: K (deg)
+uint16_t get_temperature() {					//function for measuring the inside temperature of the STM32 units: K (deg)
 	select_temperature_channel();				//select the temperature channel
 	uint32_t value = 0;							//for sampling
 	HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED); 	// ADC auto calibration for single-ended input (has to be called before start)
 	HAL_ADC_Start(&hadc1);									//start the ADC
-	HAL_ADC_PollForConversion(&hadc1, 100);
+	HAL_ADC_PollForConversion(&hadc1, 100);		// poll the ADC for conversion
 	value = HAL_ADC_GetValue(&hadc1);
-										//inbuilt driver for temperature calc; (°C - offset + 273 = K)
+										//inbuilt driver for temperature calc; (273 - offset + °C = K)
 	uint32_t adc = 273 - 10 + __LL_ADC_CALC_TEMPERATURE_TYP_PARAMS(4300, 1430, 25, 3300, value, LL_ADC_RESOLUTION_12B);
 
 
-	/*uint16_t ref_point = 1430;		//take the voltage, where the temperature is 25 °C or 298 K
-	uint32_t conv = 0;				// convert (and also look out for not getting negative values and twos complement
-	if(value <= ref_point) {						//Temperature (in °C) = {(V25 – VTS) / Avg_Slope} + 25 according to datasheet
+	/*uint16_t ref_point = 1430;	//take the voltage, where the temperature is 25 °C or 298 K
+	uint32_t conv = 0;				//convert (and also look out for not getting negative values and twos complement
+	if(value <= ref_point) {				//Temperature (in °C) = {(V25 – VTS) / Avg_Slope} + 25 according to datasheet
 		conv = 273-((ref_point-value)/4.3);
 	}
 	else {conv = 273+((value-ref_point)/4.3);};
@@ -208,10 +212,10 @@ uint16_t get_temperature() {					//units: K (deg)
 	int u4 = &ptr4;*/
 
 	HAL_ADC_Stop(&hadc1);
-	return (uint16_t)adc;		//return a uint16_t
+	return (uint16_t)adc;		//return the temperature in K, uint16_t
 };
 
-uint16_t get_refint_voltage() {				//units: mV
+uint16_t get_refint_voltage() {				//function for measuring the internal reference voltage of the STM32, units: mV
 	select_refint_channel();
 	HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED); 	// ADC auto calibration for single-ended input (has to be called before start)
 	HAL_ADC_Start(&hadc1);									//start the ADC
@@ -219,7 +223,7 @@ uint16_t get_refint_voltage() {				//units: mV
 	uint16_t adc1 = HAL_ADC_GetValue(&hadc1);
 	adc1 = __LL_ADC_CALC_VREFANALOG_VOLTAGE(adc1, LL_ADC_RESOLUTION_12B);
 	HAL_ADC_Stop(&hadc1);
-	return (uint16_t)adc1;
+	return (uint16_t)adc1;					//return the voltage in mV, uint16_t
 };
 
 //vbat channel is not connected. The 32 pin package does not have it.
