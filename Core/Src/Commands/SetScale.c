@@ -10,8 +10,8 @@
 #include <stdbool.h>
 
 bool check_res (uint16_t num) {
-	const uint16_t items[] = {0, 1, 2, 4, 8, 16, 32, 64};	//the packet sizes, but see Request.h
-    for (int i = 0; i < 8; i++)
+	const uint16_t items[] = {0, 1, 2, 4, 8, 16, 32, 64, 128};	//the packet sizes, but see Request.h
+    for (int i = 0; i < 9; i++)
     {
     	if (num == items[i]) return true;
     }

@@ -80,39 +80,39 @@ void scheduler_restart() {
 }
 
 void scheduler_on_even_second() {
-	if(current_request.type == MAX_TIME && status == RUNNING) {
+	if(current_request.type == MAX_TIME && status == RUNNING) {		//this condition stops the measurement process, when the requested time runs out
 		duration--;
 		if (duration == 0) status = FINISHED;
 	}
 
-	if (sleep_timer-1 > 0) {
+	if (sleep_timer-1 > 0) {		//sleep timer decrement
 		sleep_timer--;
 	}
 
-	if(status != IDLE) return;
+	if(status != IDLE) return;		//if the status is not IDLE, then stop, otherwhys proceed
 	uint32_t time = Get_SystemTime();
 
-	if(next_request.ID > 0){
-		if(check_request(next_request, time)){
-			current_request = next_request;
+	if(next_request.ID > 0){					//check if the ID of a measurement is bigger than 0 (has to be)
+		if(check_request(next_request, time)){	//check type and the time of the measurement
+			current_request = next_request;		//start the measurement
 			status = STARTING;
-		} else current_request = empty_request;
+		} else current_request = empty_request;	//if the check_request returns false, then empty the request
 	} else if (next_request.start_time > 0) {
-		add_error(next_request.ID, TIMEOUT);
+		add_error(next_request.ID, TIMEOUT);	//if ID is 0, and the start_time is not 0, then give a TIMEOUT error
 	}
 
-	for(int i = 0; i < 10; i++) {
+	for(int i = 0; i < 10; i++) {						//try 10 times to find a request in the queue
 		next_request = request_queue_get();
 		if(next_request.start_time > 0) {
-			if (time > next_request.start_time) {
-				add_error(next_request.ID, TIMEOUT);
-				i = 0; // try 10 more times
+			if (time > next_request.start_time) {		// if a request should have been carried out in the past,
+				add_error(next_request.ID, TIMEOUT);	// then give a timeout error and
+				i = 0; 									// start over
 			} else break;
 		}
 	}
 
 	if (next_request.type != MAX_HITS && next_request.type != MAX_TIME && next_request.type != SELFTEST) {
-		next_request = empty_request;
+		next_request = empty_request;		//empty the request
 	}
 }
 
