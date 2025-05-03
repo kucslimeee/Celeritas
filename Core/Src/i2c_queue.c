@@ -33,7 +33,7 @@ void i2c_queue_init() {
  void i2c_queue_push(uint8_t* item, bool checksum){
  	uint8_t new_item[ITEM_SIZE];
  	uint8_t copy_lenght = (checksum) ? ITEM_SIZE - 1 : ITEM_SIZE;
- 	for (uint8_t i = 0; i <= copy_lenght; i++){
+ 	for (uint8_t i = 0; i < copy_lenght; i++){
  		new_item[i] = item[i];
  	}
 

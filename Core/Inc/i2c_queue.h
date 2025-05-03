@@ -17,7 +17,6 @@
 typedef enum {
   TIMEOUT = 0xFD,
   CORRUPTED = 0xF7,
-  //INTERRUPT = 0xFB, this is not categorized as an error. this is an interrupt
 } ErrorType;
 
 void i2c_queue_init();

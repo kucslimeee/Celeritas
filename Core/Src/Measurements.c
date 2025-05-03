@@ -90,7 +90,7 @@ void measure(Request request){
 		if (resolution_measurement >= 8) {
 			// Calculating the channel and incrementing it
 
-			intervalIndex = (int)((sample - request.min_voltage)/intervalLength -1);	//which channel took a hit
+			intervalIndex = (int)((sample - request.min_voltage)/intervalLength);	//which channel took a hit
 			if(intervalIndex > resolution_measurement - 1) {intervalIndex = resolution_measurement - 1;};	//if the the calculated channel number is higher than the maximum, then set it to the maximum (to avoid incrementing outside the buffer)
 			if(intervalIndex <= 0) {intervalIndex = 0;};								//if somehow the channel number is lower than 0, then it is 0
 			if((measurementData[intervalIndex] + 1) < UINT16_MAX) {				//do not overflow the channel values
