@@ -11,6 +11,7 @@
 #include "Queue.h"
 #include "Flash.h"
 #include "Timer.h"
+#include "Checksum.h"
 
 #define ITEM_SIZE 16 // 15 elements + checksum
 
@@ -103,7 +104,7 @@ void add_header(Request request, uint16_t duration){
 		 localTime -= (headerData[i] << 24-i*8);
 	 }
 
-	 headerData[8] = request.resolution;
+	 headerData[8] = (uint8_t)(request.resolution / 8);		//this means the number of packets
 	 headerData[9] = request.min_voltage >> 4;
 	 headerData[10] = ((request.min_voltage & 0xF) << 4) | (request.max_voltage >> 8);
 	 headerData[11] = request.max_voltage & 0xFF;
@@ -122,9 +123,12 @@ void add_spectrum(uint16_t* spectrum){
 }
 
  void add_error(uint8_t request_id, ErrorType error_type){
-	 uint8_t errorData[15] = {0};
+	 uint8_t errorData[ITEM_SIZE] = {0};
 	 errorData[0] = request_id;
-	 errorData[14] = 0xD5;
-   errorData[15] = (uint8_t)error_type;
+	 errorData[13] = (uint8_t)error_type;
+   errorData[14] = 0xD5;
 	 i2c_queue_push(errorData, true);
  }
+
+
+

@@ -22,7 +22,7 @@ uint16_t arr_length = 1;
 uint16_t intervalLength = 0;
 uint64_t peak_counter = 0;
 uint64_t peak_limit = 0;
-uint16_t intervalIndex = 0;
+int intervalIndex = 0;	//this is not unsigned to distiguish negative channel numbers
 bool is_v_high = 0;		//bool to know if the voltage is above the threshold on the ADC
 uint16_t resolution_measurement = 1;
 
@@ -90,7 +90,7 @@ void measure(Request request){
 		if (resolution_measurement >= 8) {
 			// Calculating the channel and incrementing it
 
-			intervalIndex = (uint16_t)((sample - request.min_voltage)/intervalLength -1);	//which channel took a hit
+			intervalIndex = (int)((sample - request.min_voltage)/intervalLength);	//which channel took a hit
 			if(intervalIndex > resolution_measurement - 1) {intervalIndex = resolution_measurement - 1;};	//if the the calculated channel number is higher than the maximum, then set it to the maximum (to avoid incrementing outside the buffer)
 			if(intervalIndex <= 0) {intervalIndex = 0;};								//if somehow the channel number is lower than 0, then it is 0
 			if((measurementData[intervalIndex] + 1) < UINT16_MAX) {				//do not overflow the channel values
