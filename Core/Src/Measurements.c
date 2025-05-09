@@ -3,6 +3,8 @@
  *
  *  Created on: Aug 9, 2024
  *      Author: hadha
+ *
+ * 	Last update: R. Gerendas, May 9 2025
  */
 
 #include "Measurements.h"
@@ -17,14 +19,15 @@
 
 #include "stm32f3xx_ll_adc.h"
 
-			//globals
-uint16_t arr_length = 1;
+//globals
+
 uint16_t intervalLength = 0;
 uint64_t peak_counter = 0;
 uint64_t peak_limit = 0;
 int intervalIndex = 0;	//this is not unsigned to distiguish negative channel numbers
 bool is_v_high = 0;		//bool to know if the voltage is above the threshold on the ADC
-uint16_t resolution_measurement = 1;
+bool ABORTED = 0;		//bool indicating that the measurement is aborted due to safety reasons
+
 
 extern ADC_HandleTypeDef hadc1;
 extern volatile RunningState status;
@@ -54,12 +57,16 @@ uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage,
  * At last we notify the Scheduler that we're finished.
  */
 void measure(Request request){
+	ABORTED = 0;
+	uint16_t arr_length = 16;
+	uint16_t resolution_measurement = 16;
 
 	resolution_measurement = request.resolution; //input the resolution setting
 
 	arr_length = resolution_measurement;
+
 	uint16_t measurementData[arr_length];		//make a buffer for the channels
-	memset(measurementData, 0, arr_length*2);	//make every channel 0
+	memset(measurementData, 0, sizeof(measurementData));	//make every channel 0
 
 	intervalLength = (uint16_t)((request.max_voltage - request.min_voltage)/resolution_measurement); // the range of a single channel.
 	peak_counter = 0;		//set peak count to zero
@@ -82,7 +89,9 @@ void measure(Request request){
 	for(peak_counter = 0; peak_counter < peak_limit; peak_counter++){
 		// Get a sample
 		uint16_t sample = sample_adc(request.samples, request.min_voltage, request.max_voltage, request.is_okay); //wait for and sample a peak
-		if(!sample) break;										//if something goes wrong, or the status is not RUNNING, then stop (see sample_adc function)
+		if(!sample || ABORTED == 1) {
+			break;		//if something goes wrong, or the status is not RUNNING, then stop (see sample_adc function)
+		};
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, peak_counter % 2); // toggle the debug LED
 
 		// Store the sample
@@ -110,22 +119,39 @@ void measure(Request request){
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);	//turn off debug LED
 
 	//Adding the header packet (if requested)
+
+	if(ABORTED == 1) {
+		add_error(request.ID, MEASUREMENT);	//measurement aborted with error
+		scheduler_finish_measurement();
+		return;						//exit the function
+	};
+
 	if(request.is_header){
 		add_header(request, request.limit);
 	}
 
 	if(resolution_measurement < 8) {
-		// "counting" mode: write peaks into `measurementData`
+		// "counting" mode:
 		//saving the number of peaks counted
-		measurementData[0] =  peak_counter >> 48;				// first 	two bytes 	0nd and 1st	(shift (8-2) * 8 = 48 bits)
-		measurementData[1] = (peak_counter >> 32) & 0xFFFF;	// second 	two bytes	2nd and 3rd	(shift (8-4) * 8 = 32 bits)
-		measurementData[2] = (peak_counter >> 16) & 0xFFFF;	// thrid 	two bytes	4th and 5th	(shift (8-6) * 8 = 16 bits)
-		measurementData[3] =  peak_counter & 0xFFFF;			// fourth 	two bytes	6th and 7th	(shift (8-8) * 8 = 0 bits)
-		add_spectrum(measurementData);
+
+		uint16_t geiger_mode_out[8];
+		memset(geiger_mode_out, 0, sizeof(geiger_mode_out));
+
+		geiger_mode_out[0] = 0xAA;	//to signal that this is a geiger counter measurement
+		geiger_mode_out[4] = (peak_counter & 0xFFFF000000000000) >> 48;
+		geiger_mode_out[5] = (peak_counter & 0x0000FFFF00000000) >> 32;
+		geiger_mode_out[6] = (peak_counter & 0x00000000FFFF0000) >> 16;
+		geiger_mode_out[7] = (peak_counter & 0x000000000000FFFF);
+
+		for (int i = 0; i < 8; i++)		//swapping bytes for Big Endian
+			geiger_mode_out[i] = (geiger_mode_out[i] << 8) | (geiger_mode_out[i] >> 8);
+
+		add_spectrum(geiger_mode_out);
+
 	} else {
 		// "spectrum" mode
 
-		// swapping the bytes inside of channels (to see it in the Serial monitor in Big endian)
+		// swapping the bytes inside of channels (to see it in the Serial monitor in Big Endian)
 		for (int i = 0; i < arr_length; i++)
 			measurementData[i] = (measurementData[i] << 8) | (measurementData[i] >> 8);
 
@@ -148,13 +174,19 @@ uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage,
 	void wait_for_min_threshold(bool okaying) {								//wait for the analog voltage to drop below the specified minimum threshold
 		if(okaying) HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);		//if the okaying bit is set, open the transistor to drain current faster from the capacitor of the peak holder
 		uint16_t voltage;
-		do {																//do this until voltage drops below the threshold - 20 LSB for noise compensation
-			voltage = analogRead();
-		}while (voltage > (min_voltage - 20) && status == RUNNING);
-		if(okaying) HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);	//when done, lock the transistor
+		for(uint16_t abort_counter = 0; abort_counter < 65535; abort_counter++){	//do this until voltage drops below the threshold - 20 LSB for noise compensation
+			voltage = analogRead();													//or the abort_counter reaches it's max value (this happens after roughly a second)
+			if (voltage < (min_voltage - 20) || status != RUNNING){
+				if(okaying) HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET); //when done, lock the transistor
+				return;
+			}
+		}
+		ABORTED = 1;	//if the peak has been high for too long, then something is wrong with the detector, abort the process
+		return;
 	}
 
-	while(1){
+
+	while(ABORTED == 0){
 		if(status != RUNNING) {					//stop if the status is not RUNNING
 			return 0;
 		}
@@ -170,6 +202,7 @@ uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage,
 		}
 		break;									//break the while loop
 	}
+	if(ABORTED == 1) {return 0;}					//if the abort is triggered, return with 0
 
 	wait_for_min_threshold(is_okay);			//wait for the peak to drop
 
@@ -192,7 +225,7 @@ uint16_t get_temperature() {					//function for measuring the inside temperature
 	HAL_ADC_PollForConversion(&hadc1, 100);		// poll the ADC for conversion
 	value = HAL_ADC_GetValue(&hadc1);
 										//inbuilt driver for temperature calc; (273 - offset + °C = K)
-	uint32_t adc = 273 - 10 + __LL_ADC_CALC_TEMPERATURE_TYP_PARAMS(4300, 1430, 25, 3300, value, LL_ADC_RESOLUTION_12B);
+	uint32_t adc = 273 - 8 + __LL_ADC_CALC_TEMPERATURE_TYP_PARAMS(4300, 1430, 25, 3300, value, LL_ADC_RESOLUTION_12B);
 
 
 	/*uint16_t ref_point = 1430;	//take the voltage, where the temperature is 25 °C or 298 K
