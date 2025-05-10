@@ -17,6 +17,7 @@
 typedef enum {
   TIMEOUT = 0xFD,
   CORRUPTED = 0xF7,
+  MEASUREMENT = 0xFB,
 } ErrorType;
 
 void i2c_queue_init();

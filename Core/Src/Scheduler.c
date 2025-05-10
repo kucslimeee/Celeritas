@@ -89,7 +89,7 @@ void scheduler_on_even_second() {
 		sleep_timer--;
 	}
 
-	if(status != IDLE) return;		//if the status is not IDLE, then stop, otherwhys proceed
+	if(status != IDLE) return;		//if the status is not IDLE, then exit, otherwhys proceed
 	uint32_t time = Get_SystemTime();
 
 	if(next_request.ID > 0){					//check if the ID of a measurement is bigger than 0 (has to be)
