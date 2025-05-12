@@ -35,7 +35,7 @@ Setting settings[SETTING_COUNT] = {
 };
 
 void settingStoreInit() {
-	uint16_t load_length = SETTING_COUNT * 4;
+	uint16_t load_length = SETTING_COUNT;
 	uint16_t loaded_data[load_length];
 	flash_load(SETTINGS_ADDR, load_length, &loaded_data);
 	if(loaded_data[0] != 0x00 || loaded_data[1] != 0x00) return;
