@@ -22,7 +22,7 @@ volatile Queue i2c_queue = {
 		.head = 0,
 		.tail = 0,
 		.size = 0,
-		.max_size = 200,
+		.max_size = 128,
 		.flash_page = I2C_QUEUE_ADDR,
 };
 

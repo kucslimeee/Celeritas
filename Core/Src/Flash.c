@@ -8,6 +8,13 @@
 #include "Flash.h"
 #include "main.h"
 
+/**
+ * @brief	Loads data from flash
+ * @param	address	The address we start the loading from
+ * @param	length	Number of read operation that need to be performed.
+ * 					ATTENTION! 1 read operation = 4 bytes of data
+ * @param	data	save location
+ */
 void flash_load(uint32_t* address, uint16_t length, uint32_t* data) {
 	for (uint16_t i = 0; i < length; i++) {
 	    data[i] = *(__IO uint32_t *)address; // __IO is for reading from the flash
@@ -15,6 +22,13 @@ void flash_load(uint32_t* address, uint16_t length, uint32_t* data) {
 	}
 }
 
+/*
+ * @brief	Saves data to flash
+ * @param	address	The address we start saving to. MUST BE a valid flash page addr!
+ * @param	length	Number of write operations that need to be performed.
+ * 					ATTENTION! 1 write operation = 2 bytes of data
+ * @param	data	The data we save to flash
+ */
 void flash_save(uint32_t address, uint16_t length, uint16_t* data) {
 	HAL_FLASH_Unlock();
 
@@ -41,6 +55,9 @@ void flash_save(uint32_t address, uint16_t length, uint16_t* data) {
     HAL_FLASH_Lock();
 }
 
+/**
+ * @brief	RESETS the FLASH user area!
+ */
 void flash_reset() {
 	HAL_FLASH_Unlock();
 

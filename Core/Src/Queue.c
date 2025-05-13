@@ -7,17 +7,20 @@ void queue_init(Queue* queue) {
     queue->data = malloc(load_length);
     memset(queue->data, 0, load_length);
 
+    // 1 flash read operation is 4 bytes (see flash_load docs).
     flash_load(queue->flash_page, load_length / 4, queue->data);
     while(1) {
     	bool is_valid = false;
     	for(uint16_t i = 0; i < queue->item_size; i++) {
-    		if(*((uint16_t *)queue->data+(queue->tail*queue->item_size)+i) != 0xFFFF) {
+    		if(*((uint16_t *)queue->data+(queue->tail*queue->item_size / 2)+i) != 0xFFFF) {
     			is_valid = true;
     			break;
     		}
     	}
     	if(!is_valid) break;
-    	queue->tail++;
+    	// additional safety in order to prevent overloading the queue
+    	if(queue->tail < queue->max_size) queue->tail++;
+    	else break;
     }
     queue->size = queue->tail;
 
@@ -54,7 +57,7 @@ void queue_clear(Queue* queue) {
 
 void queue_save(Queue* queue) {
 	flash_save(queue->flash_page,
-		queue->size*queue->item_size,
+		queue->size*queue->item_size/2, // 1 flash write operation is 2 bytes
 		(uint16_t*)queue->data+(queue->head*queue->item_size/2)
 	);
 }
