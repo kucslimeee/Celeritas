@@ -31,7 +31,7 @@ volatile RunningState status = IDLE;
 
 // PRIVATE API
 
-bool vaidate_status();
+bool validate_status();
 void scheduler_save_state();
 
 bool validate_status() {
