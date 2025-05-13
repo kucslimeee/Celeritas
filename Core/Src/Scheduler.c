@@ -56,7 +56,7 @@ void scheduler_save_state() {
 	uint16_t state[24] = {0xFFEE, time >> 16, time & 0xFFFF, status};
 	memcpy(state+4, &current_request, sizeof(Request));
 	memcpy(state+14, &next_request, sizeof(Request));
-	flash_save(SCHEDULER_ADDR, 24, &state);
+	flash_save(SCHEDULER_ADDR,1, 24, &state);
 }
 
 // PUBLIC METHOD IMPLEMENTATIONS

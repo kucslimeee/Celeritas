@@ -18,8 +18,9 @@ typedef struct {
     uint16_t 	tail;       	// ending index of the queue (0 - QUEUE_SIZE-1)
     uint16_t	size;			// to seperate the number of new items from items that we can read (for example flash save)
     uint16_t	max_size;
-    uint16_t 	item_size; // size of a signle item in queue (in bytes)
+    uint16_t 	item_size; 		// size of a signle item in queue (in bytes)
     uint32_t*	flash_page;
+    uint8_t 	nf_pages;		// number of flash pages
 } Queue;
 
 void queue_init(Queue* queue);

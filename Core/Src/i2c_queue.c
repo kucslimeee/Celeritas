@@ -18,12 +18,13 @@
 extern volatile uint8_t interrupt_counter;
 
 volatile Queue i2c_queue = {
-		.item_size = 16,
+		.item_size = ITEM_SIZE,
 		.head = 0,
 		.tail = 0,
 		.size = 0,
-		.max_size = 128,
-		.flash_page = I2C_QUEUE_ADDR,
+		.max_size = 200,
+		.flash_page = I2C_QUEUE_PAGE_1_ADDR,
+		.nf_pages = 2,
 };
 
 void i2c_queue_init() {

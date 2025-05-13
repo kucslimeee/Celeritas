@@ -72,5 +72,5 @@ void saveSettings() {
 	for(int i = 0; i < SETTING_COUNT; i++) {
 		formatSetting(&settings[i], i*4, &save_data);
 	}
-	flash_save(SETTINGS_ADDR, save_length, &save_data);
+	flash_save(SETTINGS_ADDR, 1, save_length, &save_data);
 }

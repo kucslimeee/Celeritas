@@ -16,6 +16,7 @@ volatile Queue request_queue = {
 		.size = 0,
 		.max_size = 100,
 		.flash_page = REQ_QUEUE_ADDR,
+		.nf_pages = 1,
 };
 
 void request_queue_init() {

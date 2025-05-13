@@ -57,6 +57,7 @@ void queue_clear(Queue* queue) {
 
 void queue_save(Queue* queue) {
 	flash_save(queue->flash_page,
+		queue->nf_pages,
 		queue->size*queue->item_size/2, // 1 flash write operation is 2 bytes
 		(uint16_t*)queue->data+(queue->head*queue->item_size/2)
 	);
