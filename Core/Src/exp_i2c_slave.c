@@ -9,6 +9,7 @@
 #include <stdbool.h>
 #include "Commands/Commands.h"
 #include "RequestQueue.h"
+#include "Request.h"
 #include "Checksum.h"
 #include "i2c_queue.h"
 #include "Timer.h"
@@ -131,7 +132,7 @@ void process_TimesyncCommand(void)
 {
 	uint32_t timestamp = (RxData[4]<<24) | (RxData[3]<<16) | (RxData[2]<<8) | RxData[1];
 	Set_SystemTime(timestamp);
-	scheduler_on_command();
+	scheduler_on_timesync();
 }
 
 void process_Command()
