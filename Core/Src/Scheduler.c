@@ -26,37 +26,65 @@ volatile uint8_t interrupt_counter;
 volatile uint8_t sleep_timer;
 bool command_complete = false;
 bool restart_flag = false;
+volatile bool turnoff_check = false; // check if we need to care about current or next_request timesync
 volatile RunningState status = IDLE;
 
 // PRIVATE API
+
+bool validate_status();
+void scheduler_save_state();
+
 bool validate_status() {
 	if (status != IDLE && status != STARTING && status != RUNNING && status != FINISHED) {
 		status = IDLE;
 	}
 }
 
+/**	******************** SCHEDULER PREFERENCES ********************
+ *  Scheduler preferences are system data that related to scheduler,
+ *  but they aren't connected to any other subsystem for various re-
+ *  asons.
+ *
+ *  Structure:
+ *    - 0xFF 0xEE (mark of scheduler preferences -
+ *    				labels that we have settings saved)
+ *    - state (2 bytes);
+ *    - current_request, next_request - 20-20 bytes each
+ */
+
 void scheduler_init() {
-	uint16_t loaded_state[24];
-	flash_load(SCHEDULER_ADDR, 24, &loaded_state);
+	uint16_t loaded_state[22];
+	flash_load(SCHEDULER_ADDR, 11, ((uint32_t *)&loaded_state)); // 1 read operation = 4 bytes (see flash_load docs)
 	if(loaded_state[0] != 0xFFEE) return;
-	uint32_t system_time = (loaded_state[1] << 16) | loaded_state[2];
-	Set_SystemTime(system_time);
-	status = (RunningState)loaded_state[3];
+	status = (RunningState)loaded_state[1];
 	validate_status();
+	memcpy(&current_request, loaded_state+2, sizeof(Request));
+	memcpy(&next_request, loaded_state+12, sizeof(Request));
 
-	memcpy(&current_request, loaded_state+4, sizeof(Request));
-	memcpy(&next_request, loaded_state+14, sizeof(Request));
+	// validate requests (if invalid - empty them)
+	if (!check_request(current_request, 0)) status = IDLE;
+	if (!check_request(next_request, 0)) next_request = empty_request;
 
-	if (!check_request(current_request, system_time)) status = IDLE;
-	if (!check_request(next_request, system_time)) next_request = empty_request;
+	// check for turn offs while measurements
+	// we need to detect if the system is stopped while running any measurement,
+	// and generate an error if such thing had happened
+	if (status == RUNNING) {
+		add_error(current_request.ID, TERMINATED);
+		current_request = empty_request;
+		status = IDLE;
+		turnoff_check = true;
+		scheduler_save_state(); // just that we don't generate two turnoff error for the same request
+	}
+	// if the turnoff happened during the "countdown" of a request,
+	// we need to check if it is still valid or not.
+	if (status == STARTING) turnoff_check = true;
 }
 
 void scheduler_save_state() {
-	uint32_t time = Get_SystemTime();
-	uint16_t state[24] = {0xFFEE, time >> 16, time & 0xFFFF, status};
-	memcpy(state+4, &current_request, sizeof(Request));
-	memcpy(state+14, &next_request, sizeof(Request));
-	flash_save(SCHEDULER_ADDR, 24, &state);
+	uint16_t state[22] = {0xFFEE, status};
+	memcpy(state+2, &current_request, sizeof(Request));
+	memcpy(state+12, &next_request, sizeof(Request));
+	flash_save(SCHEDULER_ADDR, 1, 22, (uint16_t *)&state); // 1 write operation = 2 bytes of data (see flash_save docs)
 }
 
 // PUBLIC METHOD IMPLEMENTATIONS
@@ -96,6 +124,7 @@ void scheduler_on_even_second() {
 		if(check_request(next_request, time)){	//check type and the time of the measurement
 			current_request = next_request;		//start the measurement
 			status = STARTING;
+			scheduler_save_state();				// save the starting sate
 		} else current_request = empty_request;	//if the check_request returns false, then empty the request
 	} else if (next_request.start_time > 0) {
 		add_error(next_request.ID, TIMEOUT);	//if ID is 0, and the start_time is not 0, then give a TIMEOUT error
@@ -120,6 +149,25 @@ void scheduler_on_i2c_communication() {
 	scheduler_wakeup();
 	if(status != RUNNING) return;
 	if(interrupt_counter+1 <= 0xFF) interrupt_counter++;
+}
+
+void scheduler_on_timesync() {
+	uint32_t system_time = Get_SystemTime();
+
+	// if there was a turnoff, we need to check current and next requests agains
+	// the first synced time
+	if(turnoff_check) {
+		if(!check_request(current_request, system_time)) {
+			if(current_request.ID > 0) add_error(current_request.ID, TIMEOUT);
+			status = IDLE;
+		}
+		if(!check_request(next_request, system_time)) {
+			if(next_request.ID > 0) add_error(current_request.ID, TIMEOUT);
+			next_request = empty_request;
+		}
+		turnoff_check = false;
+	}
+	scheduler_on_command();
 }
 
 void scheduler_update() {
@@ -165,6 +213,7 @@ void scheduler_update() {
 	if(Get_SystemTime() != current_request.start_time) return;
 	status = RUNNING;
 	sleep_timer = 0;
+	scheduler_save_state(); // save the running state
 	if (current_request.type == SELFTEST) selftest(current_request);
 	else {
 		if(current_request.type == MAX_TIME) duration = current_request.limit;
@@ -177,6 +226,7 @@ void scheduler_finish_measurement() {
 	interrupt_counter = 0;
 	current_request = empty_request;
 	i2c_queue_save();
+	scheduler_save_state(); // save the idle state
 	scheduler_enter_sleep();
 }
 
