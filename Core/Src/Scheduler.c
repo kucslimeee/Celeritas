@@ -23,7 +23,7 @@ volatile Request current_request;
 volatile Request next_request;
 uint16_t duration;
 volatile uint8_t interrupt_counter;
-volatile uint8_t sleep_timer;
+volatile uint16_t sleep_timer;
 bool command_complete = false;
 bool restart_flag = false;
 volatile bool turnoff_check = false; // check if we need to care about current or next_request timesync
