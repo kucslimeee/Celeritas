@@ -18,11 +18,9 @@
 extern volatile uint8_t interrupt_counter;
 
 volatile Queue i2c_queue = {
+		.ID = I2C_QUEUE,
 		.item_size = ITEM_SIZE,
-		.head = 0,
-		.tail = 0,
-		.size = 0,
-		.max_size = 200,
+		.max_size = 255,
 		.flash_page = I2C_QUEUE_PAGE_1_ADDR,
 		.nf_pages = 2,
 };
@@ -42,7 +40,7 @@ void i2c_queue_init() {
  		new_item[ITEM_SIZE-1] = calculate_checksum(item, ITEM_SIZE-1);
  	}
 
- 	if (i2c_queue.size == i2c_queue.max_size){
+ 	if (i2c_queue.cursor->size == i2c_queue.max_size){
  		return; // QUEUE_OVERFLOW_ERROR
  	}
 
@@ -55,27 +53,23 @@ void i2c_queue_init() {
 	 return data;
  }
 
- void i2c_queue_clear(void){
-	queue_clear(&i2c_queue);
-}
-
  uint8_t* i2c_queue_fetch(uint8_t idx, bool* result) {
-	 if(i2c_queue.size == 0) {
+	 if(i2c_queue.cursor->size == 0) {
 		 *result = false;
 		 return NULL;
 	 }
 
 	 result = true;
-	 return i2c_queue.data+(i2c_queue.head + idx)*ITEM_SIZE;
+	 return i2c_queue.data+(i2c_queue.cursor->head + idx)*ITEM_SIZE;
  }
 
  uint8_t i2c_queue_count(bool (*filter)(uint8_t* item)) {
-	 if(i2c_queue.size == 0) {
+	 if(i2c_queue.cursor->size == 0) {
 		 return NULL;
 	 }
 
 	 uint8_t filtered_count = 0;
-	 for (int i = 0; i < i2c_queue.size; i++) {
+	 for (int i = 0; i < i2c_queue.cursor->size; i++) {
 		 bool res;
 		 uint8_t* item = i2c_queue_fetch(i, &res);
 		 if(res)
@@ -127,7 +121,7 @@ void add_spectrum(uint16_t* spectrum){
 	 uint8_t errorData[ITEM_SIZE] = {0};
 	 errorData[0] = request_id;
 	 errorData[13] = (uint8_t)error_type;
-   errorData[14] = 0xD5;
+	 errorData[14] = 0xD5;
 	 i2c_queue_push(errorData, true);
  }
 

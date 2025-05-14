@@ -23,7 +23,7 @@ volatile Request current_request;
 volatile Request next_request;
 uint16_t duration;
 volatile uint8_t interrupt_counter;
-volatile uint8_t sleep_timer;
+volatile uint16_t sleep_timer;
 bool command_complete = false;
 bool restart_flag = false;
 volatile bool turnoff_check = false; // check if we need to care about current or next_request timesync
@@ -276,13 +276,4 @@ void scheduler_request_selftest(uint8_t id, uint32_t start_time, uint8_t priorit
  */
 uint8_t scheduler_get_request_id(uint8_t idx) {
 	return (idx) ? next_request.ID : current_request.ID;
-}
-
-
-/*void scheduler_delete_request(uint8_t id) {
-	request_queue_delete(id);
-}*/
-
-void scheduler_delete_all_requests() {
-	request_queue_clear();
 }
