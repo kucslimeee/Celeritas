@@ -25,6 +25,7 @@
 #include "i2c_queue.h"
 #include "Scheduler.h"
 #include "SettingsStore.h"
+#include "QueueManager.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -101,6 +102,7 @@ int main(void)
   }
 
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_SET);
+  queue_manager_init();
   settingStoreInit();
   request_queue_init();
   i2c_queue_init();

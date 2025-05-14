@@ -26,13 +26,14 @@
 #define ADDR_FLASH_PAGE_31    ((uint32_t)0x0800F800) /* Base address of Page 31, 2 Kbytes */
 
 #define FLASH_USER_START_ADDR   ADDR_FLASH_PAGE_20   /* Start @ of user Flash area */
-#define FLASH_USER_END_ADDR     ADDR_FLASH_PAGE_24   /* End @ of user Flash area */
+#define FLASH_USER_END_ADDR     ADDR_FLASH_PAGE_25   /* End @ of user Flash area */
 
 #define SETTINGS_ADDR 			ADDR_FLASH_PAGE_20
 #define I2C_QUEUE_PAGE_1_ADDR	ADDR_FLASH_PAGE_21
 #define I2C_QUEUE_PAGE_2_ADDR	ADDR_FLASH_PAGE_22 // separated an marked for clearance, won't be mentioned in code
 #define REQ_QUEUE_ADDR			ADDR_FLASH_PAGE_23
 #define SCHEDULER_ADDR			ADDR_FLASH_PAGE_24
+#define QUEUE_MANAGER_ADDR		ADDR_FLASH_PAGE_25
 
 
 #include <stdint.h>
