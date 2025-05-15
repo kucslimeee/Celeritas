@@ -8,6 +8,7 @@
 #include "Flash.h"
 #include "main.h"
 
+
 /**
  * @brief	Loads data from flash
  * @param	address	The address we start the loading from

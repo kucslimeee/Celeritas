@@ -73,7 +73,10 @@ void scheduler_init() {
 		current_request = empty_request;
 		status = IDLE;
 		turnoff_check = true;
+
+		flash_access_halted = 1;
 		scheduler_save_state(); // just that we don't generate two turnoff error for the same request
+		flash_access_halted = 0;
 	}
 	// if the turnoff happened during the "countdown" of a request,
 	// we need to check if it is still valid or not.
@@ -113,7 +116,7 @@ void scheduler_on_even_second() {
 		if (duration == 0) status = FINISHED;
 	}
 
-	if (sleep_timer-1 > 0) {		//sleep timer decrement
+	if (sleep_timer > 1) {		//sleep timer decrement
 		sleep_timer--;
 	}
 
@@ -124,7 +127,11 @@ void scheduler_on_even_second() {
 		if(check_request(next_request, time)){	//check type and the time of the measurement
 			current_request = next_request;		//start the measurement
 			status = STARTING;
-			scheduler_save_state();				// save the starting sate
+			if(flash_access_halted != 1){
+				flash_access_halted = 1;
+				scheduler_save_state();
+				flash_access_halted = 0;
+			};			// save the starting sate
 		} else current_request = empty_request;	//if the check_request returns false, then empty the request
 	} else if (next_request.start_time > 0) {
 		add_error(next_request.ID, TIMEOUT);	//if ID is 0, and the start_time is not 0, then give a TIMEOUT error
@@ -174,15 +181,21 @@ void scheduler_update() {
 	if(command_complete) {
 		command_complete = false;
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1);
-		HAL_Delay(200);
+		HAL_Delay(100);
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
 		if (!restart_flag) {
+
+			flash_access_halted = 1;
+			scheduler_save_state();
+			saveSettings();
+			queue_manager_save();
 			i2c_queue_save();
 			request_queue_save();
-			scheduler_save_state();
+			flash_access_halted = 0;
+
 		}
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1);
-		HAL_Delay(200);
+		HAL_Delay(100);
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
 
 		if (Get_SystemTime()+120 >= current_request.start_time && current_request.type != UNKNOWN) {
@@ -196,11 +209,17 @@ void scheduler_update() {
 
 	if (sleep_timer == 1) {
 		sleep_timer = 0;
+
+		flash_access_halted = 1;
+		scheduler_save_state();
+		saveSettings();
+		queue_manager_save();
 		i2c_queue_save();
 		request_queue_save();
-		scheduler_save_state();
-		HAL_SuspendTick();
+		flash_access_halted = 0;
+
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, 1);
+		HAL_SuspendTick();
 		HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
 	}
 
@@ -213,7 +232,11 @@ void scheduler_update() {
 	if(Get_SystemTime() != current_request.start_time) return;
 	status = RUNNING;
 	sleep_timer = 0;
-	scheduler_save_state(); // save the running state
+
+	flash_access_halted = 1;
+	scheduler_save_state(); 	// save the running state
+	flash_access_halted = 0;
+
 	if (current_request.type == SELFTEST) selftest(current_request);
 	else {
 		if(current_request.type == MAX_TIME) duration = current_request.limit;
@@ -225,9 +248,11 @@ void scheduler_finish_measurement() {
 	status = IDLE;
 	interrupt_counter = 0;
 	current_request = empty_request;
+	flash_access_halted = 1;
 	i2c_queue_save();
 	scheduler_save_state(); // save the idle state
 	scheduler_enter_sleep();
+	flash_access_halted = 0;
 }
 
 
@@ -259,7 +284,9 @@ void scheduler_add_request(uint8_t id, uint32_t start_time, uint8_t config) {
 			current_start += (uint16_t)breaktime;
 		}
 	}
+	flash_access_halted = 1;
 	request_queue_save();
+	flash_access_halted = 0;
 }
 
 void scheduler_request_selftest(uint8_t id, uint32_t start_time, uint8_t priority) {
@@ -269,6 +296,10 @@ void scheduler_request_selftest(uint8_t id, uint32_t start_time, uint8_t priorit
 	new_request.type = SELFTEST;
 	new_request.start_time = (instant_measurement) ? Get_SystemTime() + 2 : start_time;
 	request_queue_put(new_request);
+
+	flash_access_halted = 1;
+	request_queue_save();
+	flash_access_halted = 0;
 }
 
 /*

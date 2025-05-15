@@ -5,6 +5,7 @@
  *      Author: hpraszpi
  */
 
+
 #ifndef INC_FLASH_H_
 #define INC_FLASH_H_
 
@@ -40,5 +41,8 @@
 void flash_load(uint32_t* address, uint16_t length, uint32_t* data);
 void flash_save(uint32_t address, uint8_t nfpages, uint16_t length, uint16_t* data);
 void flash_reset();
+
+#include <stdbool.h>
+extern bool flash_access_halted;
 
 #endif /* INC_FLASH_H_ */

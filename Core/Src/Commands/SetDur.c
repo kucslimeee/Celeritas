@@ -23,6 +23,5 @@ void setDur(uint8_t id, uint8_t* dec) {
     }
     breaktime += *(dec+4);
     setSetting(BREAKTIME, breaktime);
-    saveSettings();
 }
 
