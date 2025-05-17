@@ -7,12 +7,11 @@
 #include "RequestQueue.h"
 #include "Queue.h"
 #include "Flash.h"
-#define REQUEST_QUEUE_SIZE QUEUE_SIZE
 
 volatile Queue request_queue = {
 		.ID = REQUEST_QUEUE,
 		.item_size = sizeof(Request),
-		.max_size = 100,
+		.max_size = 102,
 		.flash_page = REQ_QUEUE_ADDR,
 		.nf_pages = 1,
 };
@@ -40,7 +39,10 @@ static uint8_t find_insert_position(uint32_t time){
   * If the queue is full, the request is discarded.
   */
 void request_queue_put(Request request){
-	if (request_queue.cursor->size >= REQUEST_QUEUE_SIZE) return;
+	if (request_queue.cursor->size >= request_queue.max_size) {
+		request_queue.cursor->size = request_queue.max_size;
+		return;
+	}
 
 	uint8_t insert_pos = find_insert_position(request.start_time);
 	for (int i = request_queue.cursor->tail; i > insert_pos; i--){

@@ -20,7 +20,7 @@ extern volatile uint8_t interrupt_counter;
 volatile Queue i2c_queue = {
 		.ID = I2C_QUEUE,
 		.item_size = ITEM_SIZE,
-		.max_size = 255,
+		.max_size = 256,
 		.flash_page = I2C_QUEUE_PAGE_1_ADDR,
 		.nf_pages = 2,
 };
@@ -40,8 +40,9 @@ void i2c_queue_init() {
  		new_item[ITEM_SIZE-1] = calculate_checksum(item, ITEM_SIZE-1);
  	}
 
- 	if (i2c_queue.cursor->size == i2c_queue.max_size){
- 		return; // QUEUE_OVERFLOW_ERROR
+ 	if (i2c_queue.cursor->size >= i2c_queue.max_size){
+ 		i2c_queue.cursor->size = i2c_queue.max_size;
+ 		return; 			// QUEUE_OVERFLOW_ERROR, do not push data
  	}
 
  	queue_push(&i2c_queue, new_item);
