@@ -13,7 +13,8 @@ typedef enum RunningState {
 	STARTING,
 	RUNNING,
 	FINISHED,
-	IDLE
+	IDLE,
+	SLEEP
 } RunningState;
 
 extern volatile RunningState status;

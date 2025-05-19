@@ -19,7 +19,7 @@ extern ADC_HandleTypeDef hadc1;
 
 void selftest(Request request) {
 	bool error_filter (uint8_t* item) {
-		return *(item+13) == 0xD5;
+		return *(item+14) == 0xD5;
 	}
 
 	uint8_t error_count = i2c_queue_count(error_filter);

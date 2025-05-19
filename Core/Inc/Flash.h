@@ -14,8 +14,8 @@
 #define ADDR_FLASH_PAGE_18    ((uint32_t)0x08009000) /* Base address of Page 18, 2 Kbytes */
 #define ADDR_FLASH_PAGE_19    ((uint32_t)0x08009800) /* Base address of Page 19, 2 Kbytes */
 #define ADDR_FLASH_PAGE_20    ((uint32_t)0x0800A000) /* Base address of Page 20, 2 Kbytes */
-#define ADDR_FLASH_PAGE_21    ((uint32_t)0x0800A800) /* Base address of Page 21, 2 Kbytes  */
-#define ADDR_FLASH_PAGE_22    ((uint32_t)0x0800B000) /* Base address of Page 22, 2 Kbytes  */
+#define ADDR_FLASH_PAGE_21    ((uint32_t)0x0800A800) /* Base address of Page 21, 2 Kbytes */
+#define ADDR_FLASH_PAGE_22    ((uint32_t)0x0800B000) /* Base address of Page 22, 2 Kbytes */
 #define ADDR_FLASH_PAGE_23    ((uint32_t)0x0800B800) /* Base address of Page 23, 2 Kbytes */
 #define ADDR_FLASH_PAGE_24    ((uint32_t)0x0800C000) /* Base address of Page 24, 2 Kbytes */
 #define ADDR_FLASH_PAGE_25    ((uint32_t)0x0800C800) /* Base address of Page 25, 2 Kbytes */
@@ -31,7 +31,7 @@
 
 #define SETTINGS_ADDR 			ADDR_FLASH_PAGE_20
 #define I2C_QUEUE_PAGE_1_ADDR	ADDR_FLASH_PAGE_21
-#define I2C_QUEUE_PAGE_2_ADDR	ADDR_FLASH_PAGE_22 // separated an marked for clearance, won't be mentioned in code
+#define I2C_QUEUE_PAGE_2_ADDR	ADDR_FLASH_PAGE_22 	// separated an marked for clearance, won't be mentioned in code
 #define REQ_QUEUE_ADDR			ADDR_FLASH_PAGE_23
 #define SCHEDULER_ADDR			ADDR_FLASH_PAGE_24
 #define QUEUE_MANAGER_ADDR		ADDR_FLASH_PAGE_25

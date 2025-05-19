@@ -47,7 +47,7 @@ QueueCursor* queue_manager_get_cursor(QueueID queue_id){
  * @param	queue_id	defines which queue cursor's modification is requested
  * @param	max_size	Head limit. If head reaches this boundary, we set it back to zero.
  */
-void queue_manager_step_head(QueueID queue_id, uint16_t max_size){
+void queue_manager_step_head(QueueID queue_id, uint16_t max_size, bool saving){
 	// inside queue manager modifications on pointers returned by queue_manager_get_cursor are allowed
 	QueueCursor* cursor = queue_manager_get_cursor(queue_id);
 
@@ -57,11 +57,14 @@ void queue_manager_step_head(QueueID queue_id, uint16_t max_size){
 	if(cursor->head > max_size - 1){
 		cursor->head = 0; //if the read position reaches its max, it starts from the beginning
 	}
-	if(flash_access_halted != 1){
-		flash_access_halted = 1;
-		queue_manager_save();
-		flash_access_halted = 0;
-	};
+	if(saving == 1){
+		if(flash_access_halted != 1){
+			flash_access_halted = 1;
+			queue_manager_save();
+			flash_access_halted = 0;
+		}
+	}
+
 }
 
 /**
@@ -69,7 +72,7 @@ void queue_manager_step_head(QueueID queue_id, uint16_t max_size){
  * @param	queue_id	defines which queue cursor's modification is requested
  * @param 	max_size	Tail limit. If tail reaches this boundary, we set it back to zero.
  */
-void queue_manager_step_tail(QueueID queue_id, uint16_t max_size){
+void queue_manager_step_tail(QueueID queue_id, uint16_t max_size, bool saving){
 	// inside queue manager modifications on pointers returned by queue_manager_get_cursor are allowed
 	QueueCursor* cursor = queue_manager_get_cursor(queue_id);
 
@@ -79,11 +82,14 @@ void queue_manager_step_tail(QueueID queue_id, uint16_t max_size){
 	if(cursor->size > max_size-1) cursor->size = max_size;
 	else cursor->size++;
 
-	if(flash_access_halted != 1){
-		flash_access_halted = 1;
-		queue_manager_save();
-		flash_access_halted = 0;
+	if (saving == 1){
+		if(flash_access_halted != 1){
+			flash_access_halted = 1;
+			queue_manager_save();
+			flash_access_halted = 0;
+		}
 	}
+
 }
 
 void queue_manager_save(){

@@ -9,7 +9,9 @@
 #define INC_QUEUEMANAGER_H_
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "QueueID.h"
+
 
 typedef struct {
     uint16_t 	head;       	// starting index of the queue (0 - QUEUE_SIZE-1)
@@ -20,7 +22,7 @@ typedef struct {
 
 void queue_manager_init();
 QueueCursor* queue_manager_get_cursor(QueueID queue_id);
-void queue_manager_step_head(QueueID queue_id, uint16_t max_size);
-void queue_manager_step_tail(QueueID queue_id, uint16_t max_size);
+void queue_manager_step_head(QueueID queue_id, uint16_t max_size, bool saving);
+void queue_manager_step_tail(QueueID queue_id, uint16_t max_size, bool saving);
 void queue_manager_save();
 #endif /* INC_QUEUEMANAGER_H_ */

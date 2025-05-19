@@ -49,7 +49,7 @@ void request_queue_put(Request request){
 		memcpy(request_queue.data+i, request_queue.data+(i-1)*request_queue.item_size, request_queue.item_size);
 	}
 	memcpy(request_queue.data+insert_pos*request_queue.item_size, &request, request_queue.item_size);
-	queue_manager_step_tail(request_queue.ID, request_queue.max_size);
+	queue_manager_step_tail(request_queue.ID, request_queue.max_size, false);
 }
 
 /**
@@ -61,7 +61,9 @@ void request_queue_put(Request request){
 Request request_queue_get(void) {
 	Request* request = &empty_request;
 	queue_get(&request_queue, &request);
-	return *request;
+	Request request_clone = *request;
+	memset(request, 0, request_queue.item_size);
+	return request_clone;
 }
 
 void request_queue_save(){

@@ -51,7 +51,7 @@ void queue_init(Queue* queue) {
 
 void queue_push(Queue* queue, void* item) {
 	memcpy(queue->data + queue->cursor->tail * queue->item_size, item, queue->item_size);
-	queue_manager_step_tail(queue->ID, queue->max_size);
+	queue_manager_step_tail(queue->ID, queue->max_size, false);
 }
 
 bool queue_get(Queue* queue, void** data) {
@@ -61,7 +61,7 @@ bool queue_get(Queue* queue, void** data) {
  	}
 
  	*data = queue->data+queue->cursor->head*queue->item_size;
-    queue_manager_step_head(queue->ID, queue->max_size);
+    queue_manager_step_head(queue->ID, queue->max_size, false);
 
  	return true;
 }

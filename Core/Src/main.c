@@ -82,8 +82,8 @@ int main(void)
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
 
-  /* USER CODE BEGIN Init */
-  /* USER CODE END Init */
+  /* USER CODE BEGIN Init 	*/
+  /* USER CODE END Init 	*/
 
   /* Configure the system clock */
   SystemClock_Config();
@@ -249,7 +249,7 @@ static void MX_I2C2_Init(void)
 
   /* USER CODE END I2C2_Init 1 */
   hi2c2.Instance = I2C2;
-  hi2c2.Init.Timing = 0x00201D2B;
+  hi2c2.Init.Timing = 0x00901D23;
   hi2c2.Init.OwnAddress1 = 162;
   hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
   hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
