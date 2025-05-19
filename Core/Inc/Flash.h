@@ -43,6 +43,6 @@ void flash_save(uint32_t address, uint8_t nfpages, uint16_t length, uint16_t* da
 void flash_reset();
 
 #include <stdbool.h>
-extern bool flash_access_halted;
+//extern bool flash_access_halted;
 
 #endif /* INC_FLASH_H_ */

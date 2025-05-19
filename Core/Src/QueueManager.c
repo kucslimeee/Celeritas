@@ -14,7 +14,7 @@
 #define CURSORS_LENGTH 2
 volatile QueueCursor cursors[CURSORS_LENGTH];
 
-bool flash_access_halted = 0;
+//bool flash_access_halted = 0;
 
 /*
  * @note SHOULD BE CALLED AT SYSTEM INIT BEFORE ANY OTHER QUEUE's.
@@ -57,13 +57,13 @@ void queue_manager_step_head(QueueID queue_id, uint16_t max_size, bool saving){
 	if(cursor->head > max_size - 1){
 		cursor->head = 0; //if the read position reaches its max, it starts from the beginning
 	}
-	if(saving == 1){
+	/*if(saving == 1){
 		if(flash_access_halted != 1){
 			flash_access_halted = 1;
 			queue_manager_save();
 			flash_access_halted = 0;
 		}
-	}
+	}*/
 
 }
 
@@ -82,13 +82,13 @@ void queue_manager_step_tail(QueueID queue_id, uint16_t max_size, bool saving){
 	if(cursor->size > max_size-1) cursor->size = max_size;
 	else cursor->size++;
 
-	if (saving == 1){
+	/*if (saving == 1){
 		if(flash_access_halted != 1){
 			flash_access_halted = 1;
 			queue_manager_save();
 			flash_access_halted = 0;
 		}
-	}
+	}*/
 
 }
 
