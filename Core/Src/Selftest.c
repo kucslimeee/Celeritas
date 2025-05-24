@@ -82,7 +82,7 @@ void selftest(Request request) {
 		test_measurement & 0xFF,
 		0xFE
 	};
-	i2c_queue_push(&packet_data, true);
+	i2c_queue_push(&packet_data, true, request.ID);
 	scheduler_finish_measurement();
 }
 

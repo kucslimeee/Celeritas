@@ -29,12 +29,21 @@ void i2c_queue_init() {
 	queue_init(&i2c_queue);
 }
 
- void i2c_queue_push(uint8_t* item, bool checksum){
+ void i2c_queue_push(uint8_t* item, bool checksum, uint8_t current_ID){
  	uint8_t new_item[ITEM_SIZE];
  	uint8_t copy_lenght = (checksum) ? ITEM_SIZE - 1 : ITEM_SIZE;
- 	for (uint8_t i = 0; i < copy_lenght; i++){
- 		new_item[i] = item[i];
- 	}
+
+ 	if (i2c_queue.cursor->size == i2c_queue.max_size - 1){ // push the QUEUE_OVERFLOW_ERROR packet and exit
+		memset(new_item, 0, ITEM_SIZE);
+ 		new_item[0] = current_ID;
+		new_item[13] = I2CQUEUEFULL;
+		new_item[14] = 0xD5;
+	} else {										// if the i2c queu is not full, then proceed
+		for (uint8_t i = 0; i < copy_lenght; i++){
+			new_item[i] = item[i];
+		}
+	}
+
 
  	if (checksum){
  		new_item[ITEM_SIZE-1] = calculate_checksum(item, ITEM_SIZE-1);
@@ -79,9 +88,13 @@ void i2c_queue_init() {
 	 return filtered_count;
  }
 
- void i2c_queue_save() {
+void i2c_queue_save() {
 	 queue_save(&i2c_queue);
- }
+}
+
+void i2c_queue_clear_saved() {
+	queue_clear_saved(&i2c_queue);
+}
 
 void add_header(Request request, uint16_t duration){
 	 uint8_t headerData[ITEM_SIZE];
@@ -110,12 +123,12 @@ void add_header(Request request, uint16_t duration){
 	 headerData[13] = v_int & 0xFF;
 
 	 headerData[14] = 0xFF;
-	 i2c_queue_push(headerData, true);
+	 i2c_queue_push(headerData, true, request.ID);
 
  }
 
-void add_spectrum(uint16_t* spectrum){
-	i2c_queue_push(((uint8_t*)spectrum), false);
+void add_spectrum(uint16_t* spectrum, uint8_t meas_ID){
+	i2c_queue_push(((uint8_t*)spectrum), false, meas_ID);
 }
 
  void add_error(uint8_t request_id, ErrorType error_type){
@@ -123,7 +136,7 @@ void add_spectrum(uint16_t* spectrum){
 	 errorData[0] = request_id;
 	 errorData[13] = (uint8_t)error_type;
 	 errorData[14] = 0xD5;
-	 i2c_queue_push(errorData, true);
+	 i2c_queue_push(errorData, true, request_id);
  }
 
 

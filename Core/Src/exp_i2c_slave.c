@@ -160,14 +160,17 @@ void process_Command()
 			reSelftest(command_id, command_dec);
 			break;
 		case 0x0F:
-			//flash_reset();
+			scheduler_clear_all_flash(); //reset to zeros and save all in flash
 			scheduler_restart();
 			break;
 		case 0x0E:
 			scheduler_restart();
 			break;
+		case 0xAA:
+			scheduler_save_all(false); //do not reset, only save flash
+			break;
 		default:
-			add_error(command_id, CORRUPTED);
+			add_error(command_id, UNKNOWNCOMMAND);
 			return;
 		}
 		scheduler_on_command();

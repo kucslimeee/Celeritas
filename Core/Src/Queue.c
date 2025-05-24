@@ -51,7 +51,7 @@ void queue_init(Queue* queue) {
 
 void queue_push(Queue* queue, void* item) {
 	memcpy(queue->data + queue->cursor->tail * queue->item_size, item, queue->item_size);
-	queue_manager_step_tail(queue->ID, queue->max_size, false);
+	queue_manager_step_tail(queue->ID, queue->max_size);
 }
 
 bool queue_get(Queue* queue, void** data) {
@@ -61,7 +61,7 @@ bool queue_get(Queue* queue, void** data) {
  	}
 
  	*data = queue->data+queue->cursor->head*queue->item_size;
-    queue_manager_step_head(queue->ID, queue->max_size, false);
+    queue_manager_step_head(queue->ID, queue->max_size);
 
  	return true;
 }
@@ -72,4 +72,10 @@ void queue_save(Queue* queue) {
 		queue->item_size*queue->max_size/2, // 1 flash write operation is 2 bytes
 		(uint16_t*)queue->data
 	);
+}
+
+void queue_clear_saved(Queue* queue) {
+	uint16_t clear_length = (queue->max_size * queue->item_size);
+    memset(queue->data, 0, clear_length);
+    queue_save(queue);
 }

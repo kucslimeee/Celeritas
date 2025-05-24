@@ -22,7 +22,9 @@ typedef struct {
 
 void queue_manager_init();
 QueueCursor* queue_manager_get_cursor(QueueID queue_id);
-void queue_manager_step_head(QueueID queue_id, uint16_t max_size, bool saving);
-void queue_manager_step_tail(QueueID queue_id, uint16_t max_size, bool saving);
+void queue_manager_step_head(QueueID queue_id, uint16_t max_size);
+void queue_manager_step_tail(QueueID queue_id, uint16_t max_size);
 void queue_manager_save();
+void queue_manager_clear_saved();
+
 #endif /* INC_QUEUEMANAGER_H_ */

@@ -146,7 +146,7 @@ void measure(Request request){
 		for (int i = 0; i < 8; i++)		//swapping bytes for Big Endian
 			geiger_mode_out[i] = (geiger_mode_out[i] << 8) | (geiger_mode_out[i] >> 8);
 
-		add_spectrum(geiger_mode_out);
+		add_spectrum(geiger_mode_out, request.ID);
 
 	} else {
 		// "spectrum" mode
@@ -157,7 +157,7 @@ void measure(Request request){
 
 		uint8_t packets = arr_length / 8;			//save the packets in the i2c queue
 		for (uint8_t i = 0; i < packets; i++) {
-			add_spectrum(measurementData+(i*8));
+			add_spectrum(measurementData+(i*8), request.ID);
 		}
 	}
 

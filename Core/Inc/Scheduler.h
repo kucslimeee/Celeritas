@@ -14,7 +14,7 @@ typedef enum RunningState {
 	RUNNING,
 	FINISHED,
 	IDLE,
-	SLEEP
+	SLEEP,
 } RunningState;
 
 extern volatile RunningState status;
@@ -31,6 +31,11 @@ void scheduler_update();
 void scheduler_finish_measurement();
 void scheduler_request_measurement(uint8_t id, uint32_t start_time, uint8_t config);
 void scheduler_request_selftest(uint8_t id, uint32_t start_time, uint8_t priority);
+
+void scheduler_save_all();
+void scheduler_clear_all_flash();
+void scheduler_clear_saved_state();
+
 uint8_t scheduler_get_request_id(uint8_t idx);
 
 #endif /* INC_SCHEDULER_H_ */

@@ -14,8 +14,6 @@
 #define CURSORS_LENGTH 2
 volatile QueueCursor cursors[CURSORS_LENGTH];
 
-//bool flash_access_halted = 0;
-
 /*
  * @note SHOULD BE CALLED AT SYSTEM INIT BEFORE ANY OTHER QUEUE's.
  */
@@ -47,23 +45,16 @@ QueueCursor* queue_manager_get_cursor(QueueID queue_id){
  * @param	queue_id	defines which queue cursor's modification is requested
  * @param	max_size	Head limit. If head reaches this boundary, we set it back to zero.
  */
-void queue_manager_step_head(QueueID queue_id, uint16_t max_size, bool saving){
+void queue_manager_step_head(QueueID queue_id, uint16_t max_size){
 	// inside queue manager modifications on pointers returned by queue_manager_get_cursor are allowed
 	QueueCursor* cursor = queue_manager_get_cursor(queue_id);
 
-	cursor->head = (cursor->head + 1 + max_size) % max_size;
+	cursor->head++;
 	if(cursor->size > 0) {cursor->size--;};	//additional safety
 	// check if the queue head is not out of the queue's boundaries
 	if(cursor->head > max_size - 1){
 		cursor->head = 0; //if the read position reaches its max, it starts from the beginning
 	}
-	/*if(saving == 1){
-		if(flash_access_halted != 1){
-			flash_access_halted = 1;
-			queue_manager_save();
-			flash_access_halted = 0;
-		}
-	}*/
 
 }
 
@@ -72,23 +63,15 @@ void queue_manager_step_head(QueueID queue_id, uint16_t max_size, bool saving){
  * @param	queue_id	defines which queue cursor's modification is requested
  * @param 	max_size	Tail limit. If tail reaches this boundary, we set it back to zero.
  */
-void queue_manager_step_tail(QueueID queue_id, uint16_t max_size, bool saving){
+void queue_manager_step_tail(QueueID queue_id, uint16_t max_size){
 	// inside queue manager modifications on pointers returned by queue_manager_get_cursor are allowed
 	QueueCursor* cursor = queue_manager_get_cursor(queue_id);
 
+	cursor->tail++;
 	if(cursor->tail > max_size -1) cursor->tail = 0; //if the queue reaches its max, it overflows from the beginning
-	else cursor->tail = (cursor->tail + 1 + max_size) % max_size;
 
 	if(cursor->size > max_size-1) cursor->size = max_size;
 	else cursor->size++;
-
-	/*if (saving == 1){
-		if(flash_access_halted != 1){
-			flash_access_halted = 1;
-			queue_manager_save();
-			flash_access_halted = 0;
-		}
-	}*/
 
 }
 
@@ -102,4 +85,16 @@ void queue_manager_save(){
 	memcpy(save_data+2, cursors, CURSORS_LENGTH * sizeof(QueueCursor));
 
 	flash_save(QUEUE_MANAGER_ADDR, 1, save_length, save_data);
+}
+
+void queue_manager_clear_saved(){
+	QueueCursor* cursor = queue_manager_get_cursor(I2C_QUEUE);
+	cursor->head = 0;
+	cursor->tail = 0;
+	cursor->size = 0;
+	cursor = queue_manager_get_cursor(REQUEST_QUEUE);
+	cursor->head = 0;
+	cursor->tail = 0;
+	cursor->size = 0;
+	queue_manager_save();
 }

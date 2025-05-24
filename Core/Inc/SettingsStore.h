@@ -24,5 +24,6 @@ uint16_t getSetting(SettingType setting);
 
 void setSetting(SettingType setting, uint16_t value);
 void saveSettings();
+void clear_saved_Settings();
 
 #endif //SETTINGSTORE_H

@@ -35,7 +35,7 @@ typedef struct {
 
 static Request empty_request = {
 	    .ID = 0,
-	    .type = 0,          // Assuming RequestType is an enum or similar, set to its default value
+	    .type = UNKNOWN,     // Assuming RequestType is an enum or similar, set to its default value
 	    .is_okay = false,
 		.continue_with_full_channel = false,
 	    .is_header = false,

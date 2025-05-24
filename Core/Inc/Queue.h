@@ -29,5 +29,6 @@ void queue_push(Queue* queue, void* item);
 bool queue_get(Queue* queue, void** data);
 bool queue_delete(Queue* queue, bool (*condition)(void* item));
 void queue_save(Queue* queue);
+void queue_clear_saved(Queue* queue);
 
 #endif /* INC_QUEUE_H_ */

@@ -24,11 +24,15 @@ volatile Request next_request;
 uint16_t duration;
 volatile uint8_t interrupt_counter;
 volatile uint16_t sleep_timer;
+
 bool command_complete = false;
 bool restart_flag = false;
+bool flash_busy = 0;
+
 volatile bool turnoff_check = false; // check if we need to care about current or next_request timesync
 volatile RunningState status = IDLE;
 RunningState status_before_sleep = IDLE;
+
 
 // PRIVATE API
 
@@ -74,10 +78,6 @@ void scheduler_init() {
 		current_request = empty_request;
 		status = IDLE;
 		turnoff_check = true;
-
-		/*flash_access_halted = 1;
-		scheduler_save_state(); // just that we don't generate two turnoff error for the same request
-		flash_access_halted = 0;*/
 	}
 	// if the turnoff happened during the "countdown" of a request,
 	// we need to check if it is still valid or not.
@@ -91,15 +91,25 @@ void scheduler_save_state() {
 	flash_save(SCHEDULER_ADDR, 1, 22, (uint16_t *)&state); // 1 write operation = 2 bytes of data (see flash_save docs)
 }
 
+void scheduler_clear_saved_state() {
+	uint16_t state[22];
+	memset(state, 0, 22*sizeof(uint16_t));
+	state[0] = 0xFFEE;
+	state[1] = IDLE;
+	flash_save(SCHEDULER_ADDR, 1, 22, (uint16_t *)&state); // 1 write operation = 2 bytes of data (see flash_save docs)
+}
+
 // PUBLIC METHOD IMPLEMENTATIONS
 
-void scheduler_enter_sleep() {
+void scheduler_restart_sleeptimer() {
 	sleep_timer = 300;
 }
 
 void scheduler_wakeup() {
 	HAL_ResumeTick();
-	status = status_before_sleep;
+	if (status == SLEEP){
+		status = status_before_sleep;
+	}
 }
 
 void scheduler_on_command() {
@@ -118,7 +128,7 @@ void scheduler_on_even_second() {
 		if (duration == 0) status = FINISHED;
 	}
 
-	if (sleep_timer > 1) {		//sleep timer decrement
+	if (sleep_timer > 0) {		//sleep timer decrement
 		sleep_timer--;
 	}
 
@@ -129,13 +139,6 @@ void scheduler_on_even_second() {
 		if(check_request(next_request, time)){	//check type and the time of the measurement
 			current_request = next_request;		//start the measurement
 			status = STARTING;
-
-			/*if(flash_access_halted != 1){
-				flash_access_halted = 1;
-				scheduler_save_state();
-				flash_access_halted = 0;
-			};*/						// save the starting sate
-
 		} else current_request = empty_request;	//if the check_request returns false, then empty the request
 	} else if (next_request.start_time > 0) {
 		add_error(next_request.ID, TIMEOUT);	//if ID is 0, and the start_time is not 0, then give a TIMEOUT error
@@ -158,6 +161,7 @@ void scheduler_on_even_second() {
 
 void scheduler_on_i2c_communication() {
 	scheduler_wakeup();
+	scheduler_restart_sleeptimer(); //always restart the sleep timer on i2c communication
 	if(status != RUNNING) return;
 	if(interrupt_counter < 0xFF) interrupt_counter++;
 }
@@ -165,7 +169,7 @@ void scheduler_on_i2c_communication() {
 void scheduler_on_timesync() {
 	uint32_t system_time = Get_SystemTime();
 
-	// if there was a turnoff, we need to check current and next requests agains
+	// if there was a turnoff, we need to check current and next requests against
 	// the first synced time
 	if(turnoff_check) {
 		if(!check_request(current_request, system_time)) {
@@ -184,48 +188,24 @@ void scheduler_on_timesync() {
 void scheduler_update() {
 	if(command_complete) {
 		command_complete = false;
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);	//when command complete, double LED flash start
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);	//when command complete, double short LED flash
+		HAL_Delay(100);
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1);
+		HAL_Delay(100);
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
 		HAL_Delay(100);
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1);
 		HAL_Delay(100);
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
 
-		/*if (!restart_flag) {
-			flash_access_halted = 1;
-			scheduler_save_state();
-			saveSettings();
-			queue_manager_save();
-			i2c_queue_save();
-			request_queue_save();
-			flash_access_halted = 0;
-		}*/
-
-		//double short led flash end
-		HAL_Delay(100);
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1);
-		HAL_Delay(100);
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
-
-		if (Get_SystemTime()+120 >= current_request.start_time && current_request.type != UNKNOWN) {
-			scheduler_wakeup();
-		} else {
-			scheduler_enter_sleep();
+		if (Get_SystemTime()+600 <= current_request.start_time && current_request.type != UNKNOWN) {
+			scheduler_restart_sleeptimer();
 		}
 	}
 
 	validate_status();
 
-	if (sleep_timer == 1) {
-		sleep_timer = 0;
-
-		/*flash_access_halted = 1;
-		scheduler_save_state();
-		saveSettings();
-		queue_manager_save();
-		i2c_queue_save();
-		request_queue_save();
-		flash_access_halted = 0;*/
-
+	if (sleep_timer == 0) {
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, 1);
 		status_before_sleep = status;
 		status = SLEEP;
@@ -239,13 +219,19 @@ void scheduler_update() {
 	}
 
 	if(status != STARTING) return;
+	if(Get_SystemTime() > current_request.start_time) {		//additional safety so the current request does not get stuck
+		add_error(current_request.ID, TIMEOUT);
+		current_request = empty_request;
+		status = IDLE;
+		return;
+	}
 	if(Get_SystemTime() != current_request.start_time) return;
 	status = RUNNING;
 	sleep_timer = 0;
 
-	/*flash_access_halted = 1;
-	scheduler_save_state(); 	// save the running state
-	flash_access_halted = 0;*/
+	flash_busy = 1;			// flash_busy is responsible not to call flash_save twice by accident - this would lead to an error_handler or hardfault loop.
+	scheduler_save_state(); // save the running state, to account for a sudden power outage with TERMINATED error after reboot
+	flash_busy = 0;
 
 	if (current_request.type == SELFTEST) selftest(current_request);
 	else {
@@ -257,20 +243,17 @@ void scheduler_update() {
 void scheduler_finish_measurement() {
 	status = IDLE;
 	interrupt_counter = 0;
+	scheduler_restart_sleeptimer();
 	current_request = empty_request;
-
-	/*flash_access_halted = 1;
-	i2c_queue_save();
-	scheduler_save_state(); 		// save the idle state
-	flash_access_halted = 0;*/
-
-	scheduler_enter_sleep();
-
+	scheduler_restart_sleeptimer();
+	flash_busy = 1;
+	scheduler_save_state();
+	flash_busy = 0;
 }
 
 
 void scheduler_add_request(uint8_t id, uint32_t start_time, uint8_t config) {
-	bool instant_measurement = start_time == 0xffffffff;
+	bool instant_measurement = start_time == 0xffffffff; //if the start time is the maximum value,
 	Request new_request;
 	new_request.ID = id;
     new_request.type = getSetting(MODE_OF_OPERATION);
@@ -278,7 +261,7 @@ void scheduler_add_request(uint8_t id, uint32_t start_time, uint8_t config) {
     new_request.is_header = config & 0x40; // the second bit of byte 5
     new_request.continue_with_full_channel = config & 0x80;
 	new_request.limit = getSetting(DURATION);
-	new_request.start_time = (instant_measurement) ? Get_SystemTime() + 2 : start_time;
+	new_request.start_time = (instant_measurement) ? Get_SystemTime() + 2 : start_time; //then instantly schedule the measurement
 	new_request.min_voltage = getSetting(MIN_VOLTAGE);
 	new_request.max_voltage = getSetting(MAX_VOLTAGE);
 	new_request.samples = getSetting(SAMPLES);
@@ -297,22 +280,15 @@ void scheduler_add_request(uint8_t id, uint32_t start_time, uint8_t config) {
 			current_start += (uint16_t)breaktime;
 		}
 	}
-	/*flash_access_halted = 1;
-	request_queue_save();
-	flash_access_halted = 0;*/
 }
 
 void scheduler_request_selftest(uint8_t id, uint32_t start_time, uint8_t priority) {
-	bool instant_measurement = start_time == 0xffffffff;
+	bool instant_measurement = start_time == 0xffffffff; //if the start time is the maximum value,
 	Request new_request;
 	new_request.ID =  id;
 	new_request.type = SELFTEST;
-	new_request.start_time = (instant_measurement) ? Get_SystemTime() + 2 : start_time;
+	new_request.start_time = (instant_measurement) ? Get_SystemTime() + 2 : start_time; //then instantly schedule the measurement
 	request_queue_put(new_request);
-
-	/*flash_access_halted = 1;
-	request_queue_save();
-	flash_access_halted = 0;*/
 }
 
 /*
@@ -320,4 +296,26 @@ void scheduler_request_selftest(uint8_t id, uint32_t start_time, uint8_t priorit
  */
 uint8_t scheduler_get_request_id(uint8_t idx) {
 	return (idx) ? next_request.ID : current_request.ID;
+}
+
+void scheduler_save_all() {
+	if (flash_busy != 1){				//if the flash is busy saving something (there is a small chance that this happens),
+		scheduler_save_state();			//then do not call the flash_save function again
+		saveSettings();
+		queue_manager_save();
+		i2c_queue_save();
+		request_queue_save();
+	}
+
+}
+
+void scheduler_clear_all_flash() {
+	if (flash_busy != 1){				//if the flash is busy saving something (there is a small chance that this happens),
+		scheduler_clear_saved_state();		//then do not call the flash_save function again
+		clear_saved_Settings();
+		queue_manager_clear_saved();
+		i2c_queue_clear_saved();
+		request_queue_clear_saved();
+	}
+
 }

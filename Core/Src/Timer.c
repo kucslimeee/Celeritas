@@ -25,7 +25,7 @@ void Systick_Interrupt(){
 		}
 		else {
 			if(status == STARTING) {devide = 1000;}
-		};		//idle status flashes rappidly, starting status flashes slowly
+		};		//idle status flashes rapidly, starting status flashes slowly
 		if(status != RUNNING)  {
 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, counter % devide == 0);
 		}

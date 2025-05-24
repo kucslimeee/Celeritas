@@ -7,6 +7,7 @@
 #include "RequestQueue.h"
 #include "Queue.h"
 #include "Flash.h"
+#include "i2c_queue.h"
 
 volatile Queue request_queue = {
 		.ID = REQUEST_QUEUE,
@@ -27,6 +28,7 @@ void request_queue_init() {
   */
 static uint8_t find_insert_position(uint32_t time){
  	for (int i = request_queue.cursor->head; i != request_queue.cursor->tail; i++){
+ 		if (i == request_queue.max_size){i = -1; continue;}; //then start from the beginning of the buffer
  		if (((Request* )request_queue.data+i)->start_time > time){
  			return i;
  		}
@@ -39,17 +41,26 @@ static uint8_t find_insert_position(uint32_t time){
   * If the queue is full, the request is discarded.
   */
 void request_queue_put(Request request){
-	if (request_queue.cursor->size >= request_queue.max_size) {
+
+	if (request_queue.cursor->size >= request_queue.max_size) { //if the request queue is full, then register an error in i2c queue and exit the function
 		request_queue.cursor->size = request_queue.max_size;
+		add_error(request.ID, REQUESTQUEUEFULL);
+
 		return;
 	}
 
 	uint8_t insert_pos = find_insert_position(request.start_time);
-	for (int i = request_queue.cursor->tail; i > insert_pos; i--){
-		memcpy(request_queue.data+i, request_queue.data+(i-1)*request_queue.item_size, request_queue.item_size);
+	for (int i = request_queue.cursor->tail; i != insert_pos; i--){
+		if (i == 0){
+			memcpy((Request* )request_queue.data + (request_queue.max_size - 1), (Request* )request_queue.data, request_queue.item_size);
+			i = request_queue.max_size-1;
+		}
+		else{
+			memcpy((Request* )request_queue.data+i, (Request* )request_queue.data+(i-1), request_queue.item_size);
+		}
 	}
 	memcpy(request_queue.data+insert_pos*request_queue.item_size, &request, request_queue.item_size);
-	queue_manager_step_tail(request_queue.ID, request_queue.max_size, false);
+	queue_manager_step_tail(request_queue.ID, request_queue.max_size);
 }
 
 /**
@@ -68,4 +79,8 @@ Request request_queue_get(void) {
 
 void request_queue_save(){
 	queue_save(&request_queue);
+}
+
+void request_queue_clear_saved(){
+	queue_clear_saved(&request_queue);
 }

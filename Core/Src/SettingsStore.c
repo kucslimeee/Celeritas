@@ -74,3 +74,17 @@ void saveSettings() {
 	}
 	flash_save(SETTINGS_ADDR, 1, save_length, &save_data);
 }
+
+void clear_saved_Settings(Setting){
+	settings[0].value = MAX_HITS;
+	settings[1].value = 0;
+	settings[2].value = 10;
+	settings[3].value = 0;
+	settings[4].value = 1;
+	settings[5].value = 200;
+	settings[6].value = 4095;
+	settings[7].value = 16;
+	settings[8].value = 3;
+
+	saveSettings();
+}
