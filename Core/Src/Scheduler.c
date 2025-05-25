@@ -161,9 +161,11 @@ void scheduler_on_even_second() {
 
 void scheduler_on_i2c_communication() {
 	scheduler_wakeup();
-	scheduler_restart_sleeptimer(); //always restart the sleep timer on i2c communication
-	if(status != RUNNING) return;
-	if(interrupt_counter < 0xFF) interrupt_counter++;
+	if(status != RUNNING) {
+		scheduler_restart_sleeptimer(); //always reset the sleep timer on i2c communication
+		return;
+	}
+	if(interrupt_counter < 0xFF) interrupt_counter++; //the measurement was interrupted
 }
 
 void scheduler_on_timesync() {
@@ -198,7 +200,7 @@ void scheduler_update() {
 		HAL_Delay(100);
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
 
-		if (Get_SystemTime()+600 <= current_request.start_time && current_request.type != UNKNOWN) {
+		if (current_request.start_time - Get_SystemTime() < 600) {
 			scheduler_restart_sleeptimer();
 		}
 	}
@@ -243,7 +245,6 @@ void scheduler_update() {
 void scheduler_finish_measurement() {
 	status = IDLE;
 	interrupt_counter = 0;
-	scheduler_restart_sleeptimer();
 	current_request = empty_request;
 	scheduler_restart_sleeptimer();
 	flash_busy = 1;
@@ -317,5 +318,4 @@ void scheduler_clear_all_flash() {
 		i2c_queue_clear_saved();
 		request_queue_clear_saved();
 	}
-
 }

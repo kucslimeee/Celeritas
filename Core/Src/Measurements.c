@@ -170,7 +170,7 @@ void measure(Request request){
  */
 uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage, bool is_okay){
 	uint16_t sum = 0; //ADC value
-	uint16_t noise_bounds = 10;
+	uint16_t noise_bounds = 10; // in ADC values, this means 8 mV
 
 	void wait_for_min_threshold(bool okaying) {								//wait for the analog voltage to drop below the specified minimum threshold
 		if(okaying) HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);		//if the okaying bit is set, open the transistor to drain current faster from the capacitor of the peak holder
@@ -198,7 +198,7 @@ uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage,
 		} else { is_v_high = 0;};				//otherwhys the voltage is below min threshold
 		if(!(sum > (min_voltage + noise_bounds) && sum < (max_voltage - noise_bounds))) {continue;}; //if the voltage value does not fall in the measurement range, then skip this iteration and start the while loop again (meaning there are no peaks)
 		is_v_high = 1;							//there is a peak, the voltage is high
-		for(int i = 1; i <= samples; i++){		//take samples
+		for(int i = 1; i < samples; i++){		//take samples
 			sum += analogRead();
 		}
 		break;									//break the while loop
