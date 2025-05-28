@@ -27,7 +27,8 @@ volatile uint16_t sleep_timer;
 
 bool command_complete = false;
 bool restart_flag = false;
-bool flash_busy = 0;
+bool flash_busy = false;
+bool i2c_recieved = false;
 
 volatile bool turnoff_check = false; // check if we need to care about current or next_request timesync
 volatile RunningState status = IDLE;
@@ -161,11 +162,10 @@ void scheduler_on_even_second() {
 
 void scheduler_on_i2c_communication() {
 	scheduler_wakeup();
-	if(status != RUNNING) {
-		scheduler_restart_sleeptimer(); //always reset the sleep timer on i2c communication
-		return;
+	i2c_recieved = true;
+	if(status == RUNNING && interrupt_counter < 0xFF) {
+		interrupt_counter++; //the measurement was interrupted
 	}
-	if(interrupt_counter < 0xFF) interrupt_counter++; //the measurement was interrupted
 }
 
 void scheduler_on_timesync() {
@@ -188,17 +188,21 @@ void scheduler_on_timesync() {
 }
 
 void scheduler_update() {
+	if(i2c_recieved){
+		i2c_recieved = false;
+		scheduler_restart_sleeptimer();
+		for (int i = 0; i < 5; i++){
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, i % 2 == 1);	//when i2c communication, double short LED flash
+			HAL_Delay(50);
+		}
+	}
+
 	if(command_complete) {
 		command_complete = false;
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);	//when command complete, double short LED flash
-		HAL_Delay(100);
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1);
-		HAL_Delay(100);
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
-		HAL_Delay(100);
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1);
-		HAL_Delay(100);
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
+		for (int i = 0; i < 5; i++){
+					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, i % 2 == 1);	//when command complete, double long LED flash
+					HAL_Delay(200);
+				}
 
 		if (current_request.start_time - Get_SystemTime() < 600) {
 			scheduler_restart_sleeptimer();

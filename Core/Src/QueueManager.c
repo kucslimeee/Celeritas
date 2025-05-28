@@ -68,10 +68,16 @@ void queue_manager_step_tail(QueueID queue_id, uint16_t max_size){
 	QueueCursor* cursor = queue_manager_get_cursor(queue_id);
 
 	cursor->tail++;
-	if(cursor->tail > max_size -1) cursor->tail = 0; //if the queue reaches its max, it overflows from the beginning
+	if(cursor->tail > max_size -1) {
+		cursor->tail = 0; //if the queue reaches its max, it overflows from the beginning
+	}
 
-	if(cursor->size > max_size-1) cursor->size = max_size;
-	else cursor->size++;
+	if(cursor->size > max_size-1) {
+		cursor->size = max_size;
+	}
+	else {
+		cursor->size++;
+	}
 
 }
 

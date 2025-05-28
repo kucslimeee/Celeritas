@@ -85,6 +85,5 @@ void clear_saved_Settings(Setting){
 	settings[6].value = 4095;
 	settings[7].value = 16;
 	settings[8].value = 3;
-
 	saveSettings();
 }

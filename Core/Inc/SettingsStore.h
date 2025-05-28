@@ -7,7 +7,7 @@
 #include<stdint.h>
 
 typedef enum  {
-    MODE_OF_OPERATION = 0,
+    MODE_OF_OPERATION,
 	IS_OKAY,
 	DURATION,
 	BREAKTIME,

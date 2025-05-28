@@ -27,14 +27,24 @@ void request_queue_init() {
   * @return The position to insert the new request
   */
 static uint8_t find_insert_position(uint32_t time){
- 	for (int i = request_queue.cursor->head; i != request_queue.cursor->tail; i++){
- 		if (i == request_queue.max_size){i = -1; continue;}; //then start from the beginning of the buffer
- 		if (((Request* )request_queue.data+i)->start_time > time){
- 			return i;
- 		}
- 	}
- 	return request_queue.cursor->tail;
- }
+
+	int i = request_queue.cursor->head; //start from the head position
+
+	i--; //to compensate for the first increment in the dowhile loop
+
+	do {
+		i++;										//increment the position i
+		if (i >= request_queue.max_size){i = 0;}; 	//if this overflows, then start from the beginning of the buffer
+		if (((Request* )(request_queue.data + i * request_queue.item_size))->start_time > time){ //Check the start time of to stored request to the new one
+		 	return i;	//return this insert position
+		 }
+
+	}
+	while (i != request_queue.cursor->tail); //do this until reaching the tail position
+
+	return request_queue.cursor->tail;	//if the tail position was reached, this means none of the already stored requests have later start time than the new request
+}										//by default the insert position is in the tail position
+
 
 /**
   * Puts a request into the request queue, sorted by start time.
@@ -49,18 +59,21 @@ void request_queue_put(Request request){
 		return;
 	}
 
-	uint8_t insert_pos = find_insert_position(request.start_time);
-	for (int i = request_queue.cursor->tail; i != insert_pos; i--){
-		if (i == 0){
-			memcpy((Request* )request_queue.data + (request_queue.max_size - 1), (Request* )request_queue.data, request_queue.item_size);
-			i = request_queue.max_size-1;
+	uint8_t insert_pos = find_insert_position(request.start_time); //find the position to insert the new request
+
+	for (int i = request_queue.cursor->tail; i != insert_pos; i--){ //this for loop pushes all requests starting from the insert position and ending at the tail, one block of memory higher
+
+		if (i != 0) { // copy position i-1 to position i
+			memcpy(request_queue.data + (i * request_queue.item_size), request_queue.data + (i-1) * request_queue.item_size, request_queue.item_size);
 		}
-		else{
-			memcpy((Request* )request_queue.data+i, (Request* )request_queue.data+(i-1), request_queue.item_size);
+		else { //if the position is 0, then copy the highest position to i=0
+			memcpy(request_queue.data, request_queue.data + (request_queue.max_size - 1)*request_queue.item_size, request_queue.item_size);
+			i = request_queue.max_size; // go to the highest position
 		}
+
 	}
-	memcpy(request_queue.data+insert_pos*request_queue.item_size, &request, request_queue.item_size);
-	queue_manager_step_tail(request_queue.ID, request_queue.max_size);
+	memcpy(request_queue.data+insert_pos*request_queue.item_size, &request, request_queue.item_size); //finally copy the new request into the insert position
+	queue_manager_step_tail(request_queue.ID, request_queue.max_size); //step the tail
 }
 
 /**
