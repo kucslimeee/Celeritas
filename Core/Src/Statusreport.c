@@ -17,9 +17,14 @@
 uint8_t * generate_status_report(){
 
 	uint32_t time = Get_SystemTime();
-	uint16_t temperature = 0x00; //default value
-	if (status != RUNNING) temperature = get_temperature(); //while the ADC is occupied for measurement, the temperature can not be readed
 
+	uint16_t temperature = 0; //default values
+	uint16_t v_int = 0;
+
+	if (status != RUNNING){ //while the ADC is occupied for measurement, the temperature can not be read
+		uint16_t v_int = get_refint_voltage();
+		temperature = get_temperature(v_int);
+	}
 	uint8_t current_ID = scheduler_get_request_id(0);
 	QueueCursor* i2c_cursor_temp = queue_manager_get_cursor(I2C_QUEUE);
 	QueueCursor* request_cursor_temp = queue_manager_get_cursor(REQUEST_QUEUE);

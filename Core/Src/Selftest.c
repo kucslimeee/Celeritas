@@ -23,7 +23,8 @@ void selftest(Request request) {
 	}
 
 	uint8_t error_count = i2c_queue_count(error_filter);
-	uint16_t temperature = get_temperature();
+	uint16_t ref_voltage_temp = get_refint_voltage();
+	uint16_t temperature = get_temperature(ref_voltage_temp);
 	uint32_t time = Get_SystemTime();
 
 	uint8_t fetch_packet_id(uint8_t idx) {
@@ -44,7 +45,7 @@ void selftest(Request request) {
 
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 1);
-	HAL_Delay(1000);										//Wait for the signal chain to start up and stabilize
+	HAL_Delay(500);										//Wait for the signal chain to start up and stabilize
 	select_measurement_channel();
 	HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED); 	// ADC auto calibration for single-ended input (has to be called before start)
 	HAL_ADC_Start(&hadc1);									// Start the ADC
@@ -59,9 +60,7 @@ void selftest(Request request) {
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 0);
 	HAL_Delay(500);
 
-	uint16_t ref_voltage_temp = get_refint_voltage();
 	test_measurement = __LL_ADC_CALC_DATA_TO_VOLTAGE(ref_voltage_temp, test_measurement, LL_ADC_RESOLUTION_12B); //convert to mV
-
 
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);
 

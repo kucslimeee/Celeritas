@@ -171,8 +171,8 @@ void scheduler_on_i2c_communication() {
 void scheduler_on_timesync() {
 	uint32_t system_time = Get_SystemTime();
 
-	// if there was a turnoff, we need to check current and next requests against
-	// the first synced time
+	// if there was a turn off, we need to check current and next requests against
+	// the first synchronized time
 	if(turnoff_check) {
 		if(!check_request(current_request, system_time)) {
 			if(current_request.ID > 0) add_error(current_request.ID, TIMEOUT);

@@ -13,7 +13,7 @@
 
 void measure(Request request);
 uint16_t analogRead();
-uint16_t get_temperature();
+uint16_t get_temperature(uint16_t input_refint_voltage);
 uint16_t get_refint_voltage();
 
 
