@@ -10,11 +10,11 @@
 #include <stdint.h>
 
 typedef enum RunningState {
-	STARTING,
-	RUNNING,
-	FINISHED,
-	IDLE,
-	SLEEP,
+	SLEEP = 0x01,
+	IDLE = 0x02,
+	STARTING = 0x03,
+	RUNNING = 0x04,
+	FINISHED = 0x05,
 } RunningState;
 
 extern volatile RunningState status;

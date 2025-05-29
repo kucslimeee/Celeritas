@@ -22,7 +22,7 @@ void queue_manager_init() {
 	// +1 is added to the length to load the check uint32_t from flash (that validates our cursors).
 	uint16_t load_length = (CURSORS_LENGTH * sizeof(QueueCursor)) / 4 + 1;
 	uint32_t load_data[load_length];
-	flash_load(QUEUE_MANAGER_ADDR, load_length, load_data);
+	flash_load((uint32_t *)QUEUE_MANAGER_ADDR, load_length, load_data);
 
 	if(load_data[0] != CURSOR_FLASH_VALIDITY) {
 		// flash invalid
@@ -50,11 +50,10 @@ void queue_manager_step_head(QueueID queue_id, uint16_t max_size){
 	QueueCursor* cursor = queue_manager_get_cursor(queue_id);
 
 	cursor->head++;
-	if(cursor->size > 0) {cursor->size--;};	//additional safety
-	// check if the queue head is not out of the queue's boundaries
-	if(cursor->head > max_size - 1){
+	if(cursor->head > max_size - 1){ // check if the queue head is not out of the queue's boundaries
 		cursor->head = 0; //if the read position reaches its max, it starts from the beginning
 	}
+	if(cursor->size > 0) {cursor->size--;};	//additional safety
 
 }
 
@@ -68,11 +67,11 @@ void queue_manager_step_tail(QueueID queue_id, uint16_t max_size){
 	QueueCursor* cursor = queue_manager_get_cursor(queue_id);
 
 	cursor->tail++;
-	if(cursor->tail > max_size -1) {
+	if(cursor->tail > max_size - 1) {
 		cursor->tail = 0; //if the queue reaches its max, it overflows from the beginning
 	}
 
-	if(cursor->size > max_size-1) {
+	if(cursor->size > max_size - 1) {
 		cursor->size = max_size;
 	}
 	else {
@@ -90,7 +89,7 @@ void queue_manager_save(){
 	save_data[1] = CURSOR_FLASH_VALIDITY >> 16;
 	memcpy(save_data+2, cursors, CURSORS_LENGTH * sizeof(QueueCursor));
 
-	flash_save(QUEUE_MANAGER_ADDR, 1, save_length, save_data);
+	flash_save(QUEUE_MANAGER_ADDR, 1, save_length, (uint16_t *)&save_data);
 }
 
 void queue_manager_clear_saved(){

@@ -212,7 +212,7 @@ uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage,
 
 uint16_t analogRead()							//function for getting the ADC value
 {
-	HAL_ADC_PollForConversion(&hadc1, 100);		// poll the ADC for conversion
+	HAL_ADC_PollForConversion(&hadc1, 10);		// poll the ADC for conversion, timeout after 10 ms
 	uint32_t value = HAL_ADC_GetValue(&hadc1);	//HAL_ADC_GetValue returns in uint32_t !!!
 	return (uint16_t)value; 						// get the ADC value cast in uint16_t
 }

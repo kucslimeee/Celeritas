@@ -63,6 +63,11 @@ void request_queue_put(Request request){
 
 	for (int i = request_queue.cursor->tail; i != insert_pos; i--){ //this for loop pushes all requests starting from the insert position and ending at the tail, one block of memory higher
 
+		if (i < 0 || i >= request_queue.max_size) { //if i wonders away from the queue location by accident, we do not want to sort memory outside
+			add_error(request.ID, REQUESTSORT);
+			return;
+		}
+
 		if (i != 0) { // copy position i-1 to position i
 			memcpy(request_queue.data + (i * request_queue.item_size), request_queue.data + (i-1) * request_queue.item_size, request_queue.item_size);
 		}

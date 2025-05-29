@@ -22,6 +22,7 @@ typedef enum {
 	TERMINATED = 0xF0,
 	I2CQUEUEFULL = 0xDF,
 	REQUESTQUEUEFULL = 0xBF,
+	REQUESTSORT = 0xFC
 } ErrorType;
 
 void i2c_queue_init();

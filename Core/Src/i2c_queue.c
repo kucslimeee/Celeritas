@@ -33,8 +33,8 @@ void i2c_queue_init() {
  	uint8_t new_item[ITEM_SIZE];
  	uint8_t copy_lenght = (checksum) ? ITEM_SIZE - 1 : ITEM_SIZE;
 
- 	if (i2c_queue.cursor->size == i2c_queue.max_size - 1){ // push the QUEUE_OVERFLOW_ERROR packet and exit
-		memset(new_item, 0, ITEM_SIZE);
+ 	if (i2c_queue.cursor->size == i2c_queue.max_size - 1){ 	// push the QUEUE_OVERFLOW_ERROR packet and exit
+		memset(new_item, 0, ITEM_SIZE);						//we do not want to call the add error recursively
  		new_item[0] = current_ID;
 		new_item[13] = I2CQUEUEFULL;
 		new_item[14] = 0xD5;
@@ -73,20 +73,23 @@ void i2c_queue_init() {
 	 return i2c_queue.data+(i2c_queue.cursor->head + idx)*ITEM_SIZE;
  }
 
- uint8_t i2c_queue_count(bool (*filter)(uint8_t* item)) {
-	 if(i2c_queue.cursor->size == 0) {
-		 return NULL;
-	 }
+uint8_t i2c_queue_count(bool (*filter)(uint8_t* item)) {
+	if(i2c_queue.cursor->size == 0) {
+		 return 0;
+	}
 
-	 uint8_t filtered_count = 0;
-	 for (int i = 0; i < i2c_queue.cursor->size; i++) {
-		 bool res;
-		 uint8_t* item = i2c_queue_fetch(i, &res);
-		 if(res)
-			 if (filter(item)) filtered_count++;
-	 }
-	 return filtered_count;
- }
+	uint8_t filtered_count = 0;
+	for (int i = i2c_queue.cursor->head; i != i2c_queue.cursor->tail; i++) {
+		if (i >= i2c_queue.max_size){
+			i = - 1;
+		}
+		bool res;
+		uint8_t* item = i2c_queue_fetch(i, &res);
+		if(res)
+			if (filter(item)) filtered_count++;
+	}
+	return filtered_count;
+}
 
 void i2c_queue_save() {
 	 queue_save(&i2c_queue);

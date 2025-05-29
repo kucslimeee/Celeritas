@@ -40,7 +40,7 @@ void settingStoreInit() {
 
 	// note: load_length is divided by 2 because 1 read operation is 4 bytes
 	//		 and a single item of loaded_data is just 2.
-	flash_load(SETTINGS_ADDR, load_length / 2, (uint32_t*)loaded_data);
+	flash_load((uint32_t *)SETTINGS_ADDR, load_length / 2, (uint32_t*)loaded_data);
 	if(loaded_data[0] != 0x00 || loaded_data[1] != 0x00) return;
 	for (uint16_t i = 0; i < SETTING_COUNT; i++) {
 		SettingType type = loaded_data[i*4 + 1] << 8 | loaded_data[i*4];
@@ -72,7 +72,7 @@ void saveSettings() {
 	for(int i = 0; i < SETTING_COUNT; i++) {
 		formatSetting(&settings[i], i*4, &save_data);
 	}
-	flash_save(SETTINGS_ADDR, 1, save_length, &save_data);
+	flash_save(SETTINGS_ADDR, 1, save_length, (uint16_t *)&save_data);
 }
 
 void clear_saved_Settings(Setting){

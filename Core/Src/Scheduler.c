@@ -60,7 +60,7 @@ bool validate_status() {
 
 void scheduler_init() {
 	uint16_t loaded_state[22];
-	flash_load(SCHEDULER_ADDR, 11, ((uint32_t *)&loaded_state)); // 1 read operation = 4 bytes (see flash_load docs)
+	flash_load((uint32_t *)SCHEDULER_ADDR, 11, ((uint32_t *)&loaded_state)); // 1 read operation = 4 bytes (see flash_load docs)
 	if(loaded_state[0] != 0xFFEE) return;
 	status = (RunningState)loaded_state[1];
 	validate_status();
@@ -300,7 +300,8 @@ void scheduler_request_selftest(uint8_t id, uint32_t start_time, uint8_t priorit
  * 0 = current_request, 1 = next_request
  */
 uint8_t scheduler_get_request_id(uint8_t idx) {
-	return (idx) ? next_request.ID : current_request.ID;
+	uint8_t result = (idx) ? next_request.ID : current_request.ID;
+	return result;
 }
 
 void scheduler_save_all() {
