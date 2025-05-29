@@ -333,10 +333,6 @@ void Error_Handler(void)
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
 
-  __disable_irq(); //disable all interrupts
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1); //both LEDS high
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, 1);
-  HAL_Delay(3000);
   HAL_NVIC_SystemReset();
   while (1)
   {

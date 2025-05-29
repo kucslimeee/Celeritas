@@ -121,7 +121,6 @@ void scheduler_on_command() {
 
 void scheduler_restart() {
 	restart_flag = true;
-	status = FINISHED;
 }
 
 void scheduler_on_even_second() {
@@ -222,6 +221,8 @@ void scheduler_update() {
 
 	if(restart_flag) {
 		restart_flag = false;
+		HAL_NVIC_DisableIRQ(I2C2_EV_IRQn);
+		HAL_NVIC_DisableIRQ(I2C2_ER_IRQn);
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1); //both LEDS high
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, 1);
 		HAL_Delay(1000);
