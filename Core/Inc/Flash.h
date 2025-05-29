@@ -9,6 +9,9 @@
 #ifndef INC_FLASH_H_
 #define INC_FLASH_H_
 
+#include <stdint.h>
+#include <stdbool.h>
+
 #define ADDR_FLASH_PAGE_16    ((uint32_t)0x08008000) /* Base address of Page 16, 2 Kbytes */
 #define ADDR_FLASH_PAGE_17    ((uint32_t)0x08008800) /* Base address of Page 17, 2 Kbytes */
 #define ADDR_FLASH_PAGE_18    ((uint32_t)0x08009000) /* Base address of Page 18, 2 Kbytes */
@@ -37,12 +40,11 @@
 #define QUEUE_MANAGER_ADDR		ADDR_FLASH_PAGE_25
 
 
-#include <stdint.h>
+
 void flash_load(uint32_t* address, uint16_t length, uint32_t* data);
 void flash_save(uint32_t address, uint8_t nfpages, uint16_t length, uint16_t* data);
 void flash_reset();
 
-#include <stdbool.h>
 extern bool flash_busy;
 
 #endif /* INC_FLASH_H_ */

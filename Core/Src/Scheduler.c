@@ -44,6 +44,7 @@ bool validate_status() {
 	if (status != IDLE && status != STARTING && status != RUNNING && status != FINISHED) {
 		status = IDLE;
 	}
+	return 1;
 }
 
 /**	******************** SCHEDULER PREFERENCES ********************
@@ -221,6 +222,9 @@ void scheduler_update() {
 
 	if(restart_flag) {
 		restart_flag = false;
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1); //both LEDS high
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, 1);
+		HAL_Delay(1000);
 		HAL_NVIC_SystemReset();
 	}
 

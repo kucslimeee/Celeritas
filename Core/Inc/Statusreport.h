@@ -12,6 +12,7 @@
 #include "QueueManager.h"
 
 static uint8_t status_report_data[16];
+
 uint8_t * generate_status_report();
 
 

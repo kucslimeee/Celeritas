@@ -86,7 +86,10 @@ void NMI_Handler(void)
 void HardFault_Handler(void)
 {
   /* USER CODE BEGIN HardFault_IRQn 0 */
-  HAL_NVIC_SystemReset();
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1); //both LEDS high
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, 1);
+	HAL_Delay(3000);
+	HAL_NVIC_SystemReset();
   /* USER CODE END HardFault_IRQn 0 */
   while (1)
   {
