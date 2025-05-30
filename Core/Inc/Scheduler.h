@@ -8,6 +8,7 @@
 #ifndef INC_SCHEDULER_H_
 #define INC_SCHEDULER_H_
 #include <stdint.h>
+#include "QueueManager.h"
 
 typedef enum RunningState {
 	SLEEP = 0x01,
@@ -37,9 +38,8 @@ void scheduler_save_all();
 void scheduler_clear_all_flash();
 void scheduler_clear_saved_state();
 
-uint8_t scheduler_get_request_id(uint8_t idx);
+void scheduler_add_request(uint8_t id, uint32_t start_time, uint8_t config);
 
-extern void queue_manager_save();
-extern void queue_manager_clear_saved();
+uint8_t scheduler_get_request_id(uint8_t idx);
 
 #endif /* INC_SCHEDULER_H_ */
