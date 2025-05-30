@@ -25,7 +25,7 @@ extern ADC_HandleTypeDef hadc1;
 #define TxSIZE 16
 static uint8_t RxData[RxSIZE];
 static uint8_t TxData[TxSIZE] = {0x00};
-static uint8_t TX_TEMPLATE[TxSIZE] = {0x00};
+//static uint8_t TX_TEMPLATE[TxSIZE] = {0x00};
 
 uint8_t rxcount;
 uint8_t txcount;
@@ -170,7 +170,7 @@ void process_Command()
 			scheduler_restart();
 			break;
 		case 0xAA:
-			scheduler_save_all(false); //do not reset, only save flash
+			scheduler_save_all(); //do not reset, only save flash
 			break;
 		default:
 			add_error(command_id, UNKNOWNCOMMAND);

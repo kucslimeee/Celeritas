@@ -194,7 +194,7 @@ uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage,
 		sum = analogRead(); 					// measure ADC
 		if(sum > (max_voltage - noise_bounds)) {					// if the voltage is higher than the maximum threshold, it means the peak is too high amplitude
 			is_v_high = 1;						//indicate that the voltage is above the minimum threshold
-			wait_for_min_threshold(true);		//wait for the too high peak to drop
+			wait_for_min_threshold(is_okay);		//wait for the too high peak to drop
 		} else { is_v_high = 0;};				//otherwise the voltage is below minimum threshold
 		if(!(sum > (min_voltage + noise_bounds) && sum < (max_voltage - noise_bounds))) {continue;}; //if the voltage value does not fall in the measurement range, then skip this iteration and start the while loop again (meaning there are no peaks)
 		is_v_high = 1;							//there is a peak, the voltage is high
@@ -206,7 +206,7 @@ uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage,
 	if(ABORTED == 1) {return 0;}					//if the abort is triggered, return with 0
 
 	wait_for_min_threshold(is_okay);			//wait for the peak to drop
-
+	is_v_high = 0;
 	return (uint16_t)(sum/samples);				//return the sampled average ADC value of the peak
 }
 

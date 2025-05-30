@@ -21,8 +21,8 @@ uint8_t * generate_status_report(){
 	uint16_t temperature = 0; //default values
 	uint16_t v_int = 0;
 
-	if (status != RUNNING){ //while the ADC is occupied for measurement, the temperature can not be read
-		uint16_t v_int = get_refint_voltage();
+	if (status == IDLE){ //while the ADC is occupied for measurement, the temperature can not be read
+		v_int = get_refint_voltage();			//Call temperature only in IDLE mode
 		temperature = get_temperature(v_int);
 	}
 	uint8_t current_ID = scheduler_get_request_id(0);

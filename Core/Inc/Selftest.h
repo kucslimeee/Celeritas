@@ -11,4 +11,7 @@
 
 void selftest(Request request);
 
+extern bool backup_save;
+extern bool ABORTED;
+
 #endif /* INC_SELFTEST_H_ */

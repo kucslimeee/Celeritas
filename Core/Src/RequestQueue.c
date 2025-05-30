@@ -9,6 +9,8 @@
 #include "Flash.h"
 #include "i2c_queue.h"
 
+extern Request empty_request;
+
 volatile Queue request_queue = {
 		.ID = REQUEST_QUEUE,
 		.item_size = sizeof(Request),

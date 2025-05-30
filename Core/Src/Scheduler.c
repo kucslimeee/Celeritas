@@ -13,8 +13,6 @@
 #include "main.h"
 #include "Measurements.h"
 #include "SettingsStore.h"
-#include <stdbool.h>
-#include <string.h>
 #include "Selftest.h"
 #include "Flash.h"
 
@@ -29,20 +27,22 @@ bool command_complete = false;
 bool restart_flag = false;
 bool flash_busy = false;
 bool i2c_recieved = false;
+bool backup_save = false;
 
 volatile bool turnoff_check = false; // check if we need to care about current or next_request timesync
 volatile RunningState status = IDLE;
 RunningState status_before_sleep = IDLE;
 
+extern Request empty_request;
 
 // PRIVATE API
 
-bool validate_status();
 void scheduler_save_state();
 
 bool validate_status() {
 	if (status != IDLE && status != STARTING && status != RUNNING && status != FINISHED) {
 		status = IDLE;
+		return 0;
 	}
 	return 1;
 }
@@ -62,7 +62,7 @@ bool validate_status() {
 void scheduler_init() {
 	uint16_t loaded_state[22];
 	flash_load((uint32_t *)SCHEDULER_ADDR, 11, ((uint32_t *)&loaded_state)); // 1 read operation = 4 bytes (see flash_load docs)
-	if(loaded_state[0] != 0xFFEE) return;
+	if(loaded_state[0] == 0xFFEE) backup_save = true;
 	status = (RunningState)loaded_state[1];
 	validate_status();
 	memcpy(&current_request, loaded_state+2, sizeof(Request));
@@ -87,16 +87,19 @@ void scheduler_init() {
 }
 
 void scheduler_save_state() {
-	uint16_t state[22] = {0xFFEE, status};
+	uint16_t identifier = 0xFFFF;
+	if (backup_save) identifier = 0xFFEE;
+	uint16_t state[22] = {identifier, status};
 	memcpy(state+2, &current_request, sizeof(Request));
 	memcpy(state+12, &next_request, sizeof(Request));
 	flash_save(SCHEDULER_ADDR, 1, 22, (uint16_t *)&state); // 1 write operation = 2 bytes of data (see flash_save docs)
 }
 
 void scheduler_clear_saved_state() {
+	uint16_t identifier = 0xFFFF;
 	uint16_t state[22];
 	memset(state, 0, 22*sizeof(uint16_t));
-	state[0] = 0xFFEE;
+	state[0] = identifier;
 	state[1] = IDLE;
 	flash_save(SCHEDULER_ADDR, 1, 22, (uint16_t *)&state); // 1 write operation = 2 bytes of data (see flash_save docs)
 }
@@ -221,11 +224,6 @@ void scheduler_update() {
 
 	if(restart_flag) {
 		restart_flag = false;
-		HAL_NVIC_DisableIRQ(I2C2_EV_IRQn);
-		HAL_NVIC_DisableIRQ(I2C2_ER_IRQn);
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1); //both LEDS high
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, 1);
-		HAL_Delay(1000);
 		HAL_NVIC_SystemReset();
 	}
 
@@ -311,7 +309,8 @@ uint8_t scheduler_get_request_id(uint8_t idx) {
 
 void scheduler_save_all() {
 	if (flash_busy != 1){				//if the flash is busy saving something (there is a small chance that this happens),
-		scheduler_save_state();			//then do not call the flash_save function again
+		backup_save = true;				//then do not call the flash_save function again
+		scheduler_save_state();
 		saveSettings();
 		queue_manager_save();
 		i2c_queue_save();
@@ -322,7 +321,8 @@ void scheduler_save_all() {
 
 void scheduler_clear_all_flash() {
 	if (flash_busy != 1){				//if the flash is busy saving something (there is a small chance that this happens),
-		scheduler_clear_saved_state();		//then do not call the flash_save function again
+		backup_save = false;								//then do not call the flash_save function again
+		scheduler_clear_saved_state();
 		clear_saved_Settings();
 		queue_manager_clear_saved();
 		i2c_queue_clear_saved();

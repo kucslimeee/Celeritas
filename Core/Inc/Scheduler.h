@@ -39,4 +39,7 @@ void scheduler_clear_saved_state();
 
 uint8_t scheduler_get_request_id(uint8_t idx);
 
+extern void queue_manager_save();
+extern void queue_manager_clear_saved();
+
 #endif /* INC_SCHEDULER_H_ */

@@ -5,6 +5,7 @@
  *      Author: hpraszpi
  */
 #include "Selftest.h"
+#include "Scheduler.h"
 #include "i2c_queue.h"
 #include "Timer.h"
 #include "Measurements.h"
@@ -38,8 +39,11 @@ void selftest(Request request) {
 	}
 
 	uint8_t packet_1 = fetch_packet_id(0);
-	uint8_t request_1 = scheduler_get_request_id(0);
-	uint8_t request_2 = scheduler_get_request_id(1);
+	uint8_t request_1 = scheduler_get_request_id(1);
+
+	uint8_t boolean_byte = 0;
+	if (backup_save) boolean_byte++;
+	if (ABORTED) boolean_byte = boolean_byte + 2;
 
 
 
@@ -74,8 +78,8 @@ void selftest(Request request) {
 		(uint8_t)((time >> 8) & 0xFF),
 		(uint8_t)(time & 0xFF),
 		request_1,
-		request_2,
 		packet_1,
+		boolean_byte,
 		ref_voltage_temp >> 4,
 		((ref_voltage_temp & 0xF) << 4) | (test_measurement >> 8),
 		test_measurement & 0xFF,
