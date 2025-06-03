@@ -29,7 +29,6 @@ bool flash_busy = false;
 bool i2c_recieved = false;
 bool backup_save = false;
 
-volatile bool turnoff_check = false; // check if we need to care about current or next_request timesync
 volatile RunningState status = IDLE;
 RunningState status_before_sleep = IDLE;
 
@@ -68,10 +67,6 @@ void scheduler_init() {
 	memcpy(&current_request, loaded_state+2, sizeof(Request));
 	memcpy(&next_request, loaded_state+12, sizeof(Request));
 
-	// validate requests (if invalid - empty them)
-	if (!check_request(current_request, 0)) status = IDLE;
-	if (!check_request(next_request, 0)) next_request = empty_request;
-
 	// check for turn offs while measurements
 	// we need to detect if the system is stopped while running any measurement,
 	// and generate an error if such thing had happened
@@ -79,11 +74,9 @@ void scheduler_init() {
 		add_error(current_request.ID, TERMINATED);
 		current_request = empty_request;
 		status = IDLE;
-		turnoff_check = true;
 	}
 	// if the turnoff happened during the "countdown" of a request,
 	// we need to check if it is still valid or not.
-	if (status == STARTING) turnoff_check = true;
 }
 
 void scheduler_save_state() {
@@ -107,7 +100,7 @@ void scheduler_clear_saved_state() {
 // PUBLIC METHOD IMPLEMENTATIONS
 
 void scheduler_restart_sleeptimer() {
-	sleep_timer = 300;
+	sleep_timer = 255;
 }
 
 void scheduler_wakeup() {
@@ -135,30 +128,27 @@ void scheduler_on_even_second() {
 	if (sleep_timer > 0) {		//sleep timer decrement
 		sleep_timer--;
 	}
+	if (status == RUNNING) scheduler_restart_sleeptimer();
 
 	if(status != IDLE) return;		//if the status is not IDLE, then exit, otherwhys proceed
 	uint32_t time = Get_SystemTime();
 
-	if(next_request.ID > 0){					//check if the ID of a measurement is bigger than 0 (has to be)
 		if(check_request(next_request, time)){	//check type and the time of the measurement
 			current_request = next_request;		//start the measurement
 			status = STARTING;
-		} else current_request = empty_request;	//if the check_request returns false, then empty the request
-	} else if (next_request.start_time > 0) {
-		add_error(next_request.ID, TIMEOUT);	//if ID is 0, and the start_time is not 0, then give a TIMEOUT error
-	}
+		}
 
 	for(int i = 0; i < 10; i++) {						//try 10 times to find a request in the queue
 		next_request = request_queue_get();
-		if(next_request.start_time > 0) {
-			if (time > next_request.start_time) {		// if a request should have been carried out in the past,
+		if(next_request.ID > 0){
+			if(!check_request(next_request, time)) { 		// if a request should have been carried out in the past,
 				add_error(next_request.ID, TIMEOUT);	// then give a timeout error and
 				i = 0; 									// start over
 			} else break;
 		}
 	}
 
-	if (next_request.type != MAX_HITS && next_request.type != MAX_TIME && next_request.type != SELFTEST) {
+	if (!check_request(next_request, time)) {
 		next_request = empty_request;		//empty the request
 	}
 }
@@ -174,18 +164,16 @@ void scheduler_on_i2c_communication() {
 void scheduler_on_timesync() {
 	uint32_t system_time = Get_SystemTime();
 
-	// if there was a turn off, we need to check current and next requests against
-	// the first synchronized time
-	if(turnoff_check) {
-		if(!check_request(current_request, system_time)) {
+	// we need to check current and next requests against
+	// the synchronized time
+		if(!check_request(current_request, system_time) && status != RUNNING) {
 			if(current_request.ID > 0) add_error(current_request.ID, TIMEOUT);
+			current_request = empty_request;
 			status = IDLE;
 		}
 		if(!check_request(next_request, system_time)) {
-			if(next_request.ID > 0) add_error(current_request.ID, TIMEOUT);
+			if(next_request.ID > 0) add_error(next_request.ID, TIMEOUT);
 			next_request = empty_request;
-		}
-		turnoff_check = false;
 	}
 	scheduler_on_command();
 }
@@ -227,16 +215,20 @@ void scheduler_update() {
 		HAL_NVIC_SystemReset();
 	}
 
-	if(status != STARTING) return;
-	if(Get_SystemTime() > current_request.start_time) {		//additional safety so the current request does not get stuck
+	if(current_request.ID > 0){
+		if(!check_request(current_request, Get_SystemTime())) {		//additional safety so the current request does not get stuck
 		add_error(current_request.ID, TIMEOUT);
 		current_request = empty_request;
 		status = IDLE;
 		return;
+		}
 	}
+
+
+	if(status != STARTING) return;
+
 	if(Get_SystemTime() != current_request.start_time) return;
 	status = RUNNING;
-	sleep_timer = 0;
 
 	flash_busy = 1;			// flash_busy is responsible not to call flash_save twice by accident - this would lead to an error_handler or hardfault loop.
 	scheduler_save_state(); // save the running state, to account for a sudden power outage with TERMINATED error after reboot

@@ -71,6 +71,9 @@ void measure(Request request){
 	intervalLength = (uint16_t)((request.max_voltage - request.min_voltage)/resolution_measurement); // the range of a single channel.
 	peak_counter = 0;		//set peak count to zero
 
+	uint16_t v_ref = get_refint_voltage();
+	int8_t start_temperature = get_temperature(v_ref);
+
 	// Start of the analog chain
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 1);	//turn on debug LED
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 1);	//turn on the signal chain
@@ -115,6 +118,7 @@ void measure(Request request){
 	HAL_ADC_Stop(&hadc1);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, 0);	//shutdown the signal chain
   
+	status = FINISHED;
 	HAL_Delay(500);								//wait 500 ms
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, 0);	//turn off debug LED
 
@@ -127,7 +131,7 @@ void measure(Request request){
 	};
 
 	if(request.is_header){
-		add_header(request, request.limit);
+		add_header(request, request.limit, start_temperature);
 	}
 
 	if(resolution_measurement < 8) {
@@ -137,11 +141,11 @@ void measure(Request request){
 		uint16_t geiger_mode_out[8];
 		memset(geiger_mode_out, 0, sizeof(geiger_mode_out));
 
-		geiger_mode_out[0] = 0xAA;	//to signal that this is a geiger counter measurement
-		geiger_mode_out[4] = (peak_counter & 0xFFFF000000000000) >> 48;
-		geiger_mode_out[5] = (peak_counter & 0x0000FFFF00000000) >> 32;
-		geiger_mode_out[6] = (peak_counter & 0x00000000FFFF0000) >> 16;
-		geiger_mode_out[7] = (peak_counter & 0x000000000000FFFF);
+		geiger_mode_out[3] = (peak_counter & 0xFFFF000000000000) >> 48;
+		geiger_mode_out[4] = (peak_counter & 0x0000FFFF00000000) >> 32;
+		geiger_mode_out[5] = (peak_counter & 0x00000000FFFF0000) >> 16;
+		geiger_mode_out[6] = (peak_counter & 0x000000000000FFFF);
+		geiger_mode_out[7] = 0xAA00 + calculate_checksum(geiger_mode_out, 15); //to signal that this is a geiger counter measurement
 
 		for (int i = 0; i < 8; i++)		//swapping bytes for Big Endian
 			geiger_mode_out[i] = (geiger_mode_out[i] << 8) | (geiger_mode_out[i] >> 8);
@@ -175,7 +179,7 @@ uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage,
 	void wait_for_min_threshold(bool okaying) {								//wait for the analog voltage to drop below the specified minimum threshold
 		if(okaying) HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);		//if the okaying bit is set, open the transistor to drain current faster from the capacitor of the peak holder
 		uint16_t voltage;
-		for(uint16_t abort_counter = 0; abort_counter < 65535; abort_counter++){	//do this until voltage drops below the threshold - 10 LSB for noise compensation
+		for(uint16_t abort_counter = 0; abort_counter < 20000; abort_counter++){	//do this until voltage drops below the threshold - 10 LSB for noise compensation
 			voltage = analogRead();													//or the abort_counter reaches it's max value (this happens after roughly a second)
 			if (voltage < (min_voltage - noise_bounds) || status != RUNNING){
 				if(okaying) HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET); //when done, lock the transistor
@@ -198,6 +202,7 @@ uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage,
 		} else { is_v_high = 0;};				//otherwise the voltage is below minimum threshold
 		if(!(sum > (min_voltage + noise_bounds) && sum < (max_voltage - noise_bounds))) {continue;}; //if the voltage value does not fall in the measurement range, then skip this iteration and start the while loop again (meaning there are no peaks)
 		is_v_high = 1;							//there is a peak, the voltage is high
+		sum = analogRead();
 		for(int i = 1; i < samples; i++){		//take samples
 			sum += analogRead();
 		}
@@ -219,7 +224,7 @@ uint16_t analogRead()							//function for getting the ADC value
 
 
 //function for measuring the inside temperature of the STM32 units: K (deg)
-uint16_t get_temperature(uint16_t input_refint_voltage) {	//the calculation also depends on the reference voltage
+int8_t get_temperature(uint16_t input_refint_voltage) {	//the calculation also depends on the reference voltage
 	select_temperature_channel();							//select the temperature channel
 	uint32_t value = 0;										//for sampling
 	HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED); 	// ADC auto calibration for single-ended input (has to be called before start)
@@ -229,11 +234,11 @@ uint16_t get_temperature(uint16_t input_refint_voltage) {	//the calculation also
 
 	//uint32_t adc = 273 - 8 + __LL_ADC_CALC_TEMPERATURE_TYP_PARAMS(4300, 1430, 25, 3300, value, LL_ADC_RESOLUTION_12B); //inbuilt driver for temperature calculation typical parameters; (273 - offset + °C = K)
 
-	uint32_t adc = 273 + __LL_ADC_CALC_TEMPERATURE(input_refint_voltage, value, LL_ADC_RESOLUTION_12B); //inbuilt driver for temperature calculation from stored factory presets; (273 + °C = K)
+	uint32_t adc = __LL_ADC_CALC_TEMPERATURE(input_refint_voltage, value, LL_ADC_RESOLUTION_12B); //inbuilt driver for temperature calculation from stored factory presets; °C
 
 
 	HAL_ADC_Stop(&hadc1);
-	return (uint16_t)adc;		//return the temperature in K, uint16_t
+	return (int8_t)adc;		//return the temperature in K, uint16_t
 };
 
 uint16_t get_refint_voltage() {				//function for measuring the internal reference voltage of the STM32, units: mV

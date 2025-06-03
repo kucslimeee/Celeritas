@@ -19,6 +19,7 @@
 
 extern I2C_HandleTypeDef hi2c1;
 extern ADC_HandleTypeDef hadc1;
+extern Request current_request;
 
 #define RxSIZE 8
 #define TsyncSIZE 5
@@ -156,6 +157,10 @@ void process_Command()
 		case 0xD0:
 			setScale(command_id, command_dec);
 			break;
+		case 0xCC:
+			uint8_t* statuspacket = generate_status_report();
+			i2c_queue_push(statuspacket, true, command_id);
+			break;
 		case 0x07:
 			reMeasure(command_id, command_dec);
 			break;
@@ -167,10 +172,14 @@ void process_Command()
 			scheduler_restart();
 			break;
 		case 0x0E:
-			scheduler_restart();
+			scheduler_restart(); //restart
 			break;
 		case 0xAA:
-			scheduler_save_all(); //do not reset, only save flash
+			scheduler_save_all(); //save to flash
+			break;
+		case 0xBB:
+			if (status == RUNNING) status = FINISHED; // stop measurement
+			if (status == STARTING) current_request.start_time = 0;
 			break;
 		default:
 			add_error(command_id, UNKNOWNCOMMAND);

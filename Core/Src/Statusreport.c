@@ -14,11 +14,13 @@
 #include "Measurements.h"
 #include "Timer.h"
 
+extern sleep_timer;
+
 uint8_t * generate_status_report(){
 
 	uint32_t time = Get_SystemTime();
 
-	uint16_t temperature = 0; //default values
+	int8_t temperature = 0; //default values
 	uint16_t v_int = 0;
 
 	if (status == IDLE){ //while the ADC is occupied for measurement, the temperature can not be read
@@ -45,8 +47,8 @@ uint8_t * generate_status_report(){
 	status_report_data[9] = request_cursor_temp->tail;
 	status_report_data[10] = request_cursor_temp->size;
 
-	status_report_data[11] = (uint8_t)(temperature >> 8);
-	status_report_data[12] = (uint8_t)(temperature & 0xFF);
+	status_report_data[11] = temperature;
+	status_report_data[12] = sleep_timer;
 
 	status_report_data[13] = current_ID;
 

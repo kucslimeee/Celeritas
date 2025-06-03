@@ -99,19 +99,19 @@ void i2c_queue_clear_saved() {
 	queue_clear_saved(&i2c_queue);
 }
 
-void add_header(Request request, uint16_t duration){
+void add_header(Request request, uint16_t duration, int8_t start_temperature){
 
 	uint32_t localTime = Get_SystemTime();
 	uint16_t v_int = get_refint_voltage();
-	uint16_t temp = get_temperature(v_int); //measure temperature adc value and convert to Kelvin
+	int8_t temp = get_temperature(v_int); //measure temperature adc value and convert to Kelvin
 											//also depends on internal reference voltage
 	uint8_t headerData[ITEM_SIZE];
 
 	headerData[0] = request.ID;
 	headerData[1] = (uint8_t)(interrupt_counter & 0xFF);
 
-	headerData[2] = temp >> 8;
-	headerData[3] = temp & 0xFF;
+	headerData[2] = start_temperature;
+	headerData[3] = temp;
 
 	for(int i = 0; i < 4; i++){
 		headerData[4+i] = (uint8_t)(localTime >> 24-i*8);

@@ -34,7 +34,7 @@ uint8_t* i2c_queue_fetch(uint8_t idx, bool *result);
 void i2c_queue_save();
 void i2c_queue_clear_saved();
 
-void add_header(Request request, uint16_t duration);
+void add_header(Request request, uint16_t duration, int8_t start_temperature);
 void add_spectrum(uint16_t* spectrum, uint8_t meas_ID);
 void add_error(uint8_t request_id, uint8_t error_type);
 

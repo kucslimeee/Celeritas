@@ -22,8 +22,10 @@ Request empty_request = {
 };
 
 bool check_request(Request request, uint32_t time) {
+	if(request.start_time == 0) return false;
+	if(request.ID == 0) return false;
+	if(request.start_time < time) return false;		//if the measurement was required to be carried out in the past, return false
 	if(request.type != SELFTEST && request.type != MAX_TIME && request.type != MAX_HITS)
 		return false;		//return false if the measurement is neither of the specified ones
-	if(request.start_time < time) return false;		//if the measurement was required to be carried out in the past, return false
-	return true;	//other ways return true
+	return true;	//otherwise return true
 }
