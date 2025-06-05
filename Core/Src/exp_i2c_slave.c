@@ -57,7 +57,7 @@ extern void HAL_I2C_AddrCallback(I2C_HandleTypeDef *hi2c, uint8_t TransferDirect
 		bool result;
 		uint8_t* packet = i2c_queue_get(&result);
 		if(!result){
-			packet = generate_status_report();
+			packet = generate_status_report(false);
 		}
 		//if(packet[0] == 0x00) packet = TX_TEMPLATE; in the older version default packets were full of zeros
 		for(int i = 0; i < TxSIZE; i++) {
@@ -158,7 +158,7 @@ void process_Command()
 			setScale(command_id, command_dec);
 			break;
 		case 0xCC:
-			uint8_t* statuspacket = generate_status_report();
+			uint8_t* statuspacket = generate_status_report(true);
 			i2c_queue_push(statuspacket, true, command_id);
 			break;
 		case 0x07:

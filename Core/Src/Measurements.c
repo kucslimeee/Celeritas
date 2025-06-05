@@ -126,8 +126,6 @@ void measure(Request request){
 
 	if(ABORTED == 1) {
 		add_error(request.ID, MEASUREMENT);	//measurement aborted with error
-		scheduler_finish_measurement();
-		return;						//exit the function
 	};
 
 	if(request.is_header){
@@ -181,7 +179,7 @@ uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage,
 		uint16_t voltage;
 		for(uint16_t abort_counter = 0; abort_counter < 20000; abort_counter++){	//do this until voltage drops below the threshold - 10 LSB for noise compensation
 			voltage = analogRead();													//or the abort_counter reaches it's max value (this happens after roughly a second)
-			if (voltage < (min_voltage - noise_bounds) || status != RUNNING){
+			if (voltage < min_voltage || status != RUNNING){
 				if(okaying) HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET); //when done, lock the transistor
 				return;
 			}

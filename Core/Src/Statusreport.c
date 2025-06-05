@@ -14,9 +14,11 @@
 #include "Measurements.h"
 #include "Timer.h"
 
-extern sleep_timer;
+extern uint16_t sleep_timer;
+extern uint64_t peak_counter;
+extern volatile uint8_t interrupt_counter;
 
-uint8_t * generate_status_report(){
+uint8_t * generate_status_report(bool option){
 
 	uint32_t time = Get_SystemTime();
 
@@ -39,20 +41,33 @@ uint8_t * generate_status_report(){
 	status_report_data[3] = (uint8_t)((time >> 8) & 0xFF);
 	status_report_data[4] = (uint8_t)(time & 0xFF);
 
-	status_report_data[5] = i2c_cursor_temp->head;
-	status_report_data[6] = i2c_cursor_temp->tail;
-	status_report_data[7] = i2c_cursor_temp->size;
+	if (option == 0){
+		status_report_data[5] = (uint8_t)((peak_counter & 0xFF000000) >> 24);
+		status_report_data[6] = (uint8_t)((peak_counter & 0x00FF0000) >> 16);
+		status_report_data[7] = (uint8_t)((peak_counter & 0x0000FF00) >> 8);
+		status_report_data[8] = (uint8_t)((peak_counter & 0x000000FF));
+	}
+	else{
+		status_report_data[5] = i2c_cursor_temp->size;
+		status_report_data[6] = i2c_cursor_temp->head;
+		status_report_data[7] = i2c_cursor_temp->tail;
+		status_report_data[8] = request_cursor_temp->size;
+	}
 
-	status_report_data[8] = request_cursor_temp->head;
-	status_report_data[9] = request_cursor_temp->tail;
-	status_report_data[10] = request_cursor_temp->size;
+	status_report_data[9] = request_cursor_temp->head;
+	status_report_data[10] = request_cursor_temp->tail;
 
 	status_report_data[11] = temperature;
-	status_report_data[12] = sleep_timer;
+	status_report_data[12] = current_ID;
 
-	status_report_data[13] = current_ID;
-
-	status_report_data[14] = 0x55;
+	if (option == 0){
+		status_report_data[13] = interrupt_counter;
+		status_report_data[14] = 0x55;
+	}
+	else{
+		status_report_data[13] = sleep_timer;
+		status_report_data[14] = 0x56;
+	}
 
 	uint8_t checksum = calculate_checksum(status_report_data, 15);
 	status_report_data[15] = checksum;

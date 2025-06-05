@@ -10,10 +10,11 @@
 
 #include "Scheduler.h"
 #include "QueueManager.h"
+#include <stdbool.h>
 
 static uint8_t status_report_data[16];
 
-uint8_t * generate_status_report();
+uint8_t * generate_status_report(bool option);
 
 
 #endif /* INC_STATUSREPORT_H_ */
