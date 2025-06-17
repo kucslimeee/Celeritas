@@ -21,7 +21,7 @@
 
 //globals
 
-uint16_t intervalLength = 0;
+float intervalLength = 0;
 uint64_t peak_counter = 0;
 uint64_t peak_limit = 0;
 int intervalIndex = 0;	//this is not unsigned to distiguish negative channel numbers
@@ -68,7 +68,7 @@ void measure(Request request){
 	uint16_t measurementData[arr_length];		//make a buffer for the channels
 	memset(measurementData, 0, sizeof(measurementData));	//make every channel 0
 
-	intervalLength = (uint16_t)((request.max_voltage - request.min_voltage)/resolution_measurement); // the range of a single channel.
+	intervalLength = (float)((request.max_voltage - request.min_voltage)/(float)(resolution_measurement)); // the range of a single channel.
 	peak_counter = 0;		//set peak count to zero
 
 	uint16_t v_ref = get_refint_voltage();
