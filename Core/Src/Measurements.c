@@ -32,7 +32,7 @@ bool ABORTED = 0;		//bool indicating that the measurement is aborted due to safe
 extern ADC_HandleTypeDef hadc1;
 extern volatile RunningState status;
 
-uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage, bool is_okay);
+float sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage, bool is_okay);
 
 /**
  * The measurement process of Celeritas.
@@ -91,7 +91,7 @@ void measure(Request request){
 	peak_limit = (request.type == MAX_HITS) ? (uint64_t)request.limit : UINT64_MAX; //the desired number of peaks (when to stop)
 	for(peak_counter = 0; peak_counter < peak_limit; peak_counter++){
 		// Get a sample
-		uint16_t sample = sample_adc(request.samples, request.min_voltage, request.max_voltage, request.is_okay); //wait for and sample a peak
+		float sample = sample_adc(request.samples, request.min_voltage, request.max_voltage, request.is_okay); //wait for and sample a peak
 		if(!sample || ABORTED == 1) {
 			break;		//if something goes wrong, or the status is not RUNNING, then stop (see sample_adc function)
 		};
@@ -170,9 +170,9 @@ void measure(Request request){
 /*
  * BEFORE YOU CALL make SURE ADC1 is INITIALIZED AND the selected channel is ADC_IN_0 !!!!
  */
-uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage, bool is_okay){
-	uint16_t sum = 0; //ADC value
-	uint16_t noise_bounds = 10; // in ADC values, this means 8 mV
+float sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage, bool is_okay){
+	uint32_t sum = 0; //ADC value
+	uint8_t noise_bounds = 10; // in ADC values, this means 8 mV
 
 	void wait_for_min_threshold(bool okaying) {								//wait for the analog voltage to drop below the specified minimum threshold
 		if(okaying) HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);		//if the okaying bit is set, open the transistor to drain current faster from the capacitor of the peak holder
@@ -198,7 +198,7 @@ uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage,
 			is_v_high = 1;						//indicate that the voltage is above the minimum threshold
 			wait_for_min_threshold(is_okay);		//wait for the too high peak to drop
 		} else { is_v_high = 0;};				//otherwise the voltage is below minimum threshold
-		if(!(sum > (min_voltage + noise_bounds) && sum < (max_voltage - noise_bounds))) {continue;}; //if the voltage value does not fall in the measurement range, then skip this iteration and start the while loop again (meaning there are no peaks)
+		if(!(sum > (min_voltage + noise_bounds) && sum < (max_voltage - noise_bounds))) {continue;}; //if the voltage value does not fall in the measurement range, then skip this iteration and start the while loop again
 		is_v_high = 1;							//there is a peak, the voltage is high
 		sum = analogRead();
 		for(int i = 1; i < samples; i++){		//take samples
@@ -210,7 +210,7 @@ uint16_t sample_adc(uint8_t samples, uint16_t min_voltage, uint16_t max_voltage,
 
 	wait_for_min_threshold(is_okay);			//wait for the peak to drop
 	is_v_high = 0;
-	return (uint16_t)(sum/samples);				//return the sampled average ADC value of the peak
+	return (float)(sum/(float)(samples));				//return the sampled average ADC value of the peak
 }
 
 uint16_t analogRead()							//function for getting the ADC value
