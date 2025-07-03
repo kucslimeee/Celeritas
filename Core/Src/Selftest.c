@@ -54,6 +54,7 @@ void selftest(Request request) {
 	HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED); 	// ADC auto calibration for single-ended input (has to be called before start)
 	HAL_ADC_Start(&hadc1);									// Start the ADC
 
+	HAL_Delay(1);
 	uint8_t short_test_measurement = (uint8_t)analogRead();
 	short_test_measurement = __LL_ADC_CALC_DATA_TO_VOLTAGE(ref_voltage_temp, short_test_measurement, LL_ADC_RESOLUTION_12B); //convert to mV
 
